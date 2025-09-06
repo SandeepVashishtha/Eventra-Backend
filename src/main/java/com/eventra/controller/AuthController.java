@@ -21,7 +21,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Slf4j
 @Tag(name = "Authentication", description = "User authentication and registration endpoints")
 public class AuthController {

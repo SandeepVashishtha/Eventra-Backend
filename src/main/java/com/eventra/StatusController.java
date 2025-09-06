@@ -6,7 +6,6 @@ import com.eventra.repository.RoleRepository;
 import com.eventra.repository.PermissionRepository;
 import com.eventra.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class StatusController {
 
     private final RoleRepository roleRepository;
