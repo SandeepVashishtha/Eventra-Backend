@@ -1,0 +1,42 @@
+[
+  {
+    "name": "DATABASE_DIALECT",
+    "value": "org.hibernate.dialect.MySQL8Dialect",
+    "slotSetting": false
+  },
+  {
+    "name": "DATABASE_DRIVER",
+    "value": "com.mysql.cj.jdbc.Driver",
+    "slotSetting": false
+  },
+  {
+    "name": "DDL_AUTO",
+    "value": "update",
+    "slotSetting": false
+  },
+  {
+    "name": "JWT_SECRET",
+    "value": "YOUR_JWT_SECRET_KEY_HERE",
+    "slotSetting": false
+  },
+  {
+    "name": "AIVEN_DATABASE_PASSWORD",
+    "value": "YOUR_AIVEN_DATABASE_PASSWORD",
+    "slotSetting": false
+  },
+  {
+    "name": "AIVEN_DATABASE_URL",
+    "value": "jdbc:mysql://YOUR_AIVEN_HOST:PORT/defaultdb?useSSL=true&requireSSL=true&verifyServerCertificate=false&useUnicode=true&characterEncoding=utf8",
+    "slotSetting": false
+  },
+  {
+    "name": "AIVEN_DATABASE_USERNAME",
+    "value": "YOUR_AIVEN_USERNAME",
+    "slotSetting": false
+  },
+  {
+    "name": "SHOW_SQL",
+    "value": "false",
+    "slotSetting": false
+  }
+]
