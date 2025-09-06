@@ -1,101 +1,318 @@
 # Eventra Backend
 
-## Overview
+A comprehensive event management system backend built with Spring Boot, providing secure RESTful APIs for event creation, user management, and administrative operations.
 
-The backend of Eventra is built using **Spring Boot** with **Java 17**. It provides RESTful APIs for managing events, users, authentication, and other core functionalities. The backend uses:
+## 🚀 Features
 
-- Spring Data JPA for database interactions
-- Spring Security for authentication and authorization
-- MySQL as the primary database (with H2 for in-memory testing)
-- OpenAPI (Swagger) for API documentation
-- JWT for secure token-based authentication
+- **Authentication & Authorization**: JWT-based security with role-based access control
+- **Event Management**: Create, update, delete, and manage events
+- **User Management**: User registration, profile management, and admin operations
+- **Project Management**: Handle event-related projects and collaborations
+- **Health Monitoring**: Built-in health checks and monitoring endpoints
+- **API Documentation**: Interactive Swagger UI with OpenAPI 3.0 specification
+- **Database Flexibility**: Support for both MySQL (production) and H2 (development)
+- **Azure Cloud Ready**: Complete deployment configuration for Azure App Service
 
-## Setup and Running Instructions
+## 🛠 Technology Stack
 
-### Prerequisites
+- **Framework**: Spring Boot 3.3.1
+- **Language**: Java 17
+- **Build Tool**: Maven
+- **Security**: Spring Security with JWT
+- **Database**: MySQL (production) / H2 (development)
+- **ORM**: Spring Data JPA with Hibernate
+- **Documentation**: SpringDoc OpenAPI (Swagger)
+- **Validation**: Spring Boot Validation
+- **Testing**: JUnit 5 with Spring Boot Test
+- **Cloud**: Azure App Service deployment ready
 
-- Java 17
-- Maven
-- MySQL database (or use H2 for in-memory testing)
+## 📋 Prerequisites
 
-### Local Development
+Before running the application, ensure you have:
 
-1. Clone the repository
-2. Navigate to backend directory:
+- **Java 17** or higher
+- **Maven 3.6+** (or use included Maven wrapper)
+- **MySQL 8.0+** (for production environment)
+- **Git** for version control
 
-```bash
-cd backend
-```
+## 🏃‍♂️ Quick Start
 
-3. Install dependencies and run:
+### Local Development Setup
 
-   - **Windows**:
-     ```bash
-     .\mvnw.cmd spring-boot:run
-     ```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/SandeepVashishtha/Eventra-Backend
+   cd Eventra-Backend
+   ```
 
-   - **Linux/Mac**:
-     ```bash
-     ./mvnw spring-boot:run
-     ```
+2. **Run with Maven Wrapper (Recommended)**
+   
+   **Windows:**
+   ```cmd
+   .\mvnw.cmd spring-boot:run
+   ```
+   
+   **Linux/Mac:**
+   ```bash
+   ./mvnw spring-boot:run
+   ```
 
-4. Or build and run the JAR:
-
+3. **Alternative: Build and run JAR**
    ```bash
    .\mvnw.cmd clean package
    java -jar target/backend-0.0.1-SNAPSHOT.jar
    ```
 
-The backend will start on `http://localhost:8080` with:
+The application will start on `http://localhost:8080` using H2 in-memory database for development.
 
-- H2 in-memory database for development
-- H2 Console available at `http://localhost:8080/h2-console`
-- Swagger UI available at `http://localhost:8080/swagger-ui.html`
-- API endpoints available at `http://localhost:8080/api`
+### 🌐 Access Points
 
-### Production Setup
+Once running, you can access:
 
-Configure the following environment variables for MySQL and JWT:
+- **API Base URL**: `http://localhost:8080/api`
+- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+- **H2 Console**: `http://localhost:8080/h2-console` (dev mode only)
+- **Health Check**: `http://localhost:8080/health`
 
-- AIVEN_DATABASE_URL=jdbc:mysql://your-host:port/database?useSSL=true
-- AIVEN_DATABASE_USERNAME=your_username
-- AIVEN_DATABASE_PASSWORD=your_password
-- DATABASE_DRIVER=com.mysql.cj.jdbc.Driver
-- DATABASE_DIALECT=org.hibernate.dialect.MySQL8Dialect
-- DDL_AUTO=update
+## 🗄 Database Configuration
 
-Run with the production profile:
+### Development (H2 - Default)
+The application uses H2 in-memory database by default for development with these credentials:
+- **URL**: `jdbc:h2:mem:testdb`
+- **Username**: `sa`
+- **Password**: *(empty)*
 
+### Production (MySQL)
+Configure the following environment variables for MySQL:
+
+```bash
+AIVEN_DATABASE_URL=jdbc:mysql://your-mysql-host:3306/eventra_db?useSSL=true
+AIVEN_DATABASE_USERNAME=your_username
+AIVEN_DATABASE_PASSWORD=your_password
+DATABASE_DRIVER=com.mysql.cj.jdbc.Driver
+DATABASE_DIALECT=org.hibernate.dialect.MySQL8Dialect
+DDL_AUTO=update
+```
+
+### Using Different Profiles
+
+**Development Profile:**
+```bash
+mvn spring-boot:run -Dspring.profiles.active=dev
+```
+
+**Production Profile:**
 ```bash
 mvn spring-boot:run -Dspring.profiles.active=prod
 ```
 
-### Testing
+**Azure Profile:**
+```bash
+mvn spring-boot:run -Dspring.profiles.active=azure
+```
 
-Run tests with:
+## 🔐 Security Configuration
+
+The application uses JWT-based authentication. Configure these environment variables:
 
 ```bash
-mvn test
+JWT_SECRET=your-256-bit-secret-key
+JWT_EXPIRATION=86400000  # 24 hours in milliseconds
 ```
 
-## API Documentation
+## 📚 API Documentation
 
-The backend API is documented using OpenAPI (Swagger). After running the backend, access the API docs at:
+### Interactive Documentation
+Access the Swagger UI at: `http://localhost:8080/swagger-ui.html`
+
+### Main API Endpoints
+
+| Endpoint Category | Base Path | Description |
+|------------------|-----------|-------------|
+| Authentication | `/api/auth` | Login, register, token management |
+| Users | `/api/users` | User profile and management |
+| Events | `/api/events` | Event CRUD operations |
+| Admin | `/api/admin` | Administrative operations |
+| Projects | `/api/projects` | Project management |
+| Health | `/health` | Application health checks |
+
+### Authentication Endpoints
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/refresh` - Refresh JWT token
+
+### Event Management
+- `GET /api/events` - List all events
+- `POST /api/events` - Create new event
+- `GET /api/events/{id}` - Get event by ID
+- `PUT /api/events/{id}` - Update event
+- `DELETE /api/events/{id}` - Delete event
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+./mvnw test
+```
+
+### Run Specific Test Classes
+```bash
+./mvnw test -Dtest=BackendApplicationTests
+./mvnw test -Dtest=ErrorHandlingTest
+```
+
+### Test Coverage
+The project includes:
+- **Unit Tests**: Individual component testing
+- **Integration Tests**: End-to-end API testing
+- **Security Tests**: Authentication and authorization testing
+
+## 🏗 Project Structure
 
 ```
-http://localhost:8080/swagger-ui.html
+Eventra-Backend/
+├── src/
+│   ├── main/
+│   │   ├── java/com/eventra/
+│   │   │   ├── BackendApplication.java          # Main application class
+│   │   │   ├── SecurityConfig.java              # Security configuration
+│   │   │   ├── controller/                      # REST Controllers
+│   │   │   │   ├── AuthController.java          # Authentication endpoints
+│   │   │   │   ├── UserController.java          # User management
+│   │   │   │   ├── EventController.java         # Event operations
+│   │   │   │   ├── AdminController.java         # Admin operations
+│   │   │   │   └── ...
+│   │   │   ├── service/                         # Business logic
+│   │   │   ├── repository/                      # Data access layer
+│   │   │   ├── entity/                          # JPA entities
+│   │   │   ├── dto/                             # Data transfer objects
+│   │   │   ├── config/                          # Configuration classes
+│   │   │   ├── exception/                       # Custom exceptions
+│   │   │   ├── filter/                          # Security filters
+│   │   │   └── util/                            # Utility classes
+│   │   └── resources/
+│   │       ├── application.properties           # Main configuration
+│   │       ├── application-dev.properties       # Development config
+│   │       ├── application-prod.properties      # Production config
+│   │       └── application-azure.properties     # Azure config
+│   └── test/                                    # Test classes
+├── target/                                      # Compiled output
+├── bin/                                         # Build scripts
+├── pom.xml                                      # Maven configuration
+├── mvnw, mvnw.cmd                              # Maven wrapper
+├── deploy-azure.ps1                            # Azure deployment script
+├── test-azure-backend.ps1                     # Azure testing script
+├── AZURE_DEPLOYMENT_GUIDE.md                  # Azure deployment guide
+└── README.md                                   # This file
 ```
 
-The OpenAPI specification is also generated and can be found in the project root as `openapi.json` after running the build.
+## ☁️ Azure Deployment
 
-## Contribution
+This project is configured for Azure App Service deployment. Follow these guides:
 
-Contributions to the backend are welcome! Please follow these guidelines:
+### Quick Azure Deployment
+1. **Configure Azure CLI** and login to your account
+2. **Run the deployment script**:
+   ```powershell
+   .\deploy-azure.ps1
+   ```
 
-- Fork the repository and create a feature branch
-- Write clear, maintainable code following existing conventions
-- Write unit and integration tests for new features or bug fixes
-- Ensure all tests pass before submitting a pull request
-- Follow the root-level [CONTRIBUTING.md](../CONTRIBUTING.md) for general contribution guidelines
+### Detailed Guides
+- 📖 **[Azure Deployment Guide](AZURE_DEPLOYMENT_GUIDE.md)** - Complete Azure setup instructions
+- 📖 **[Azure Config Template](AZURE_CONFIG_TEMPLATE.md)** - Environment configuration template
+- 🛠 **[Database Migration Guide](DATABASE_MIGRATION.md)** - Database setup and migration
 
-For any questions or help, please reach out to the maintainers.
+### Test Azure Deployment
+```powershell
+.\test-azure-backend.ps1
+```
+
+## 🔧 Environment Variables
+
+### Required for Production
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `AIVEN_DATABASE_URL` | MySQL database URL | `jdbc:mysql://host:3306/db` |
+| `AIVEN_DATABASE_USERNAME` | Database username | `your_username` |
+| `AIVEN_DATABASE_PASSWORD` | Database password | `your_password` |
+| `JWT_SECRET` | JWT signing secret | `your-256-bit-secret` |
+
+### Optional Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `8080` |
+| `JWT_EXPIRATION` | Token expiration (ms) | `86400000` |
+| `DB_MAX_POOL_SIZE` | Max connection pool size | `10` |
+| `SHOW_SQL` | Show SQL queries | `false` |
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Port already in use:**
+```bash
+# Change port in application.properties or set environment variable
+export PORT=8081
+```
+
+**Database connection failed:**
+- Verify MySQL is running and accessible
+- Check connection string and credentials
+- Ensure database exists
+
+**JWT token issues:**
+- Verify JWT_SECRET is properly set
+- Check token expiration time
+- Ensure proper Authorization header format: `Bearer <token>`
+
+### Debug Mode
+Enable debug logging:
+```bash
+mvn spring-boot:run -Dspring.profiles.active=dev -Dlogging.level.com.eventra=DEBUG
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** following the existing code style
+4. **Add tests** for new functionality
+5. **Run all tests**: `./mvnw test`
+6. **Commit your changes**: `git commit -m 'Add amazing feature'`
+7. **Push to the branch**: `git push origin feature/amazing-feature`
+8. **Open a Pull Request**
+
+### Code Style Guidelines
+- Follow Java naming conventions
+- Use Lombok annotations to reduce boilerplate
+- Add proper JavaDoc for public methods
+- Write comprehensive tests for new features
+- Follow RESTful API design principles
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Support
+
+For questions and support:
+- 📧 Create an issue in this repository
+- 📚 Check the [documentation](docs/)
+- 💬 Join our community discussions
+
+## 🚀 What's Next?
+
+Upcoming features and improvements:
+- [ ] Real-time notifications
+- [ ] Event analytics dashboard
+- [ ] Mobile API optimization
+- [ ] Advanced search capabilities
+- [ ] Integration with external calendar systems
+
+---
+
+Built with ❤️ using Spring Boot and Java
