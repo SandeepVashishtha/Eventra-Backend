@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy JAR app to Azure Web App - Eventra-Backend
+name: Build and deploy JAR app to Azure Web App - Eventra-Backend-SpringBoot
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Java version
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'microsoft'
 
       - name: Build with Maven
@@ -34,12 +34,12 @@ jobs:
           path: '${{ github.workspace }}/target/*.jar'
 
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
-
+  
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
@@ -49,16 +49,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A55590659D1E4DEA960FC9DC53503EA2 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_897ED294039248938299C7E4F9A890DC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B8F74ABB97AE4950A10E26CDBF2669BE }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2C5B0570396B4546A9195190B411D569 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D835D845C752467790D0199974117919 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CF0A3905804742198609784FB1B8BB81 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Eventra-Backend'
+          app-name: 'Eventra-Backend-SpringBoot'
           slot-name: 'Production'
-          package: 'app.jar'
-
+          package: '*.jar'
           
