@@ -70,6 +70,18 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred", request);
     }
 
+    @ExceptionHandler(EventNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEventNotFound(
+            EventNotFoundException ex,
+            HttpServletRequest request) {
+        return buildError(
+                HttpStatus.NOT_FOUND,
+                "Not Found",
+                ex.getMessage(),
+                request
+        );
+    }
+
     private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String error,
             String message, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
