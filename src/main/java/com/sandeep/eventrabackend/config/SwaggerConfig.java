@@ -22,11 +22,16 @@ public class SwaggerConfig {
                         .title("Eventra API")
                         .description("""
                                 **Eventra** — Event Management Platform REST API.
-                                
+
                                 ### Authentication
                                 - Use `POST /api/auth/signup` to create an account.
                                 - Use `POST /api/auth/login` to obtain a JWT token.
                                 - Click **Authorize** and paste the token as `Bearer <token>` to test protected endpoints.
+
+                                ### Rate limiting
+                                Public auth/contact endpoints are rate limited by client IP.
+                                When a limit is exceeded, the API returns `429 Too Many Requests`
+                                with a standard error body and `Retry-After` header.
                                 """)
                         .version("v1.0.0")
                         .contact(new Contact()
