@@ -2,6 +2,8 @@ package com.sandeep.eventrabackend.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "events")
@@ -16,6 +18,20 @@ public class Event {
     private String location;
     private LocalDateTime eventDate;
     private boolean isPublic = true;
+
+    private Integer capacity;
+    private int registeredCount = 0;
+
+    @Version
+    private Long version;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "event_attendees",
+            joinColumns = @JoinColumn(name = "event_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> attendees = new HashSet<>();
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -35,4 +51,16 @@ public class Event {
 
     public boolean isPublic() { return isPublic; }
     public void setPublic(boolean isPublic) { this.isPublic = isPublic; }
+
+    public Integer getCapacity() { return capacity; }
+    public void setCapacity(Integer capacity) { this.capacity = capacity; }
+
+    public int getRegisteredCount() { return registeredCount; }
+    public void setRegisteredCount(int registeredCount) { this.registeredCount = registeredCount; }
+
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
+
+    public Set<User> getAttendees() { return attendees; }
+    public void setAttendees(Set<User> attendees) { this.attendees = attendees; }
 }
