@@ -10,6 +10,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -20,6 +21,21 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(EventFullException.class)
+    public ResponseEntity<ErrorResponse> handleEventFull(
+            EventFullException ex,
+            HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
+            ObjectOptimisticLockingFailureException ex,
+            HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, "Conflict", 
+                "The event was updated by another user. Please try again.", request);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(
