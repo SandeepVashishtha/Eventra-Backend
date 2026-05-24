@@ -60,6 +60,16 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
+    // NEW METHOD: Extracts the expiration date for the logout blacklist
+    public Date getExpirationDateFromToken(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
