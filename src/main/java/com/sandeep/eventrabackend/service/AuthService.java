@@ -15,6 +15,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.sandeep.eventrabackend.dto.request.GoogleAuthRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -23,16 +26,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final GoogleAuthService googleAuthService;
 
     public AuthService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager,
-                       JwtTokenProvider jwtTokenProvider) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-        this.jwtTokenProvider = jwtTokenProvider;
-    }
+                   PasswordEncoder passwordEncoder,
+                   AuthenticationManager authenticationManager,
+                   JwtTokenProvider jwtTokenProvider,
+                   GoogleAuthService googleAuthService) {
+
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.authenticationManager = authenticationManager;
+    this.jwtTokenProvider = jwtTokenProvider;
+    this.googleAuthService = googleAuthService;
+}
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
@@ -87,7 +94,72 @@ public class AuthService {
         return buildAuthResponse(user, token);
     }
 
+public AuthResponse googleLogin(GoogleAuthRequest request) {
+
+    try {
+
+        GoogleIdToken.Payload payload =
+                googleAuthService.verifyToken(request.getToken());
+
+        String email = payload.getEmail();
+
+       String firstName =
+        (String) payload.get("given_name");
+
+String lastName =
+        (String) payload.get("family_name");
+
+if (firstName == null || firstName.isBlank()) {
+    firstName = "Google";
+}
+
+if (lastName == null || lastName.isBlank()) {
+    lastName = "User";
+}
+
+        User user = userRepository
+                .findByEmail(email)
+                .orElse(null);
+
+        if (user == null) {
+
+            String baseUsername =
+                    email.split("@")[0].toLowerCase();
+
+            String username =
+                    generateUniqueUsername(baseUsername);
+
+            user = User.builder()
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .email(email.toLowerCase())
+                    .username(username)
+                    .password(
+                            passwordEncoder.encode(
+                                    UUID.randomUUID().toString()
+                            )
+                    )
+                    .role(Role.CLIENT)
+                    .build();
+
+            user = userRepository.save(user);
+        }
+
+        String token =
+                jwtTokenProvider.generateToken(user.getEmail());
+
+        return buildAuthResponse(user, token);
+
+    } catch (Exception e) {
+
+        throw new RuntimeException(
+                "Google authentication failed"
+        );
+    }
+}
+
     // ─── helpers ────────────────────────────────────────────────────────────────
+
 
     private String generateUniqueUsername(String base) {
         String candidate = base;
@@ -111,3 +183,4 @@ public class AuthService {
                 .build();
     }
 }
+

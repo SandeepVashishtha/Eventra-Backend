@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.sandeep.eventrabackend.dto.request.GoogleAuthRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -77,6 +78,8 @@ public class AuthController {
                     Use the returned `token` as `Authorization: Bearer <token>` for protected endpoints.
                     """
     )
+
+   
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login successful",
                     content = @Content(schema = @Schema(implementation = AuthResponse.class))),
@@ -91,4 +94,33 @@ public class AuthController {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
+
+
+@PostMapping("/google")
+@SecurityRequirements
+@Operation(
+        summary = "Login/Register using Google",
+        description = """
+                Authenticates user using Google OAuth token.
+                
+                If the user does not exist,
+                a new account is automatically created.
+                
+                Returns JWT token on success.
+                """
+)
+@ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Google login successful",
+                content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid Google token",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+})
+public ResponseEntity<AuthResponse> googleLogin(
+        @Valid @RequestBody GoogleAuthRequest request
+) {
+
+    AuthResponse response = authService.googleLogin(request);
+
+    return ResponseEntity.ok(response);
+}
 }

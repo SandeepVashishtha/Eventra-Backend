@@ -24,20 +24,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService; // 1. Add the blacklist service
 
+    // 2. Add the blacklist service to the constructor
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
-            UserDetailsService userDetailsService) {
+                                   UserDetailsService userDetailsService,
+                                   TokenBlacklistService tokenBlacklistService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain)
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
         try {
             String token = extractTokenFromRequest(request);
+
+            // 3. BLOCK BLACKLISTED TOKENS HERE
+            if (StringUtils.hasText(token) && tokenBlacklistService.isBlacklisted(token)) {
+                logger.warn("Attempt to use blacklisted token.");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token has been revoked/logged out");
+                return; // Stop processing the request
+            }
 
             if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
                 String username = jwtTokenProvider.getUsernameFromToken(token);
@@ -51,8 +63,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {
-            // Log but do NOT rethrow — let the request continue.
-            // permitAll() endpoints must not be blocked by a bad/stale token.
             logger.warn("Could not authenticate from JWT token: {}", ex.getMessage());
             SecurityContextHolder.clearContext();
         }
