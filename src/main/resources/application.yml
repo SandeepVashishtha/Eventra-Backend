@@ -16,3 +16,22 @@ app:
     contact:
       capacity: ${RATE_LIMIT_CONTACT_CAPACITY:5}
       window: ${RATE_LIMIT_CONTACT_WINDOW:10m}
+    
+
+google:
+  client:
+    id: <Your google client id>
+
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    database-platform: org.hibernate.dialect.H2Dialect
