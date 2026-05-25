@@ -3,7 +3,9 @@ package com.sandeep.eventrabackend.service;
 import com.sandeep.eventrabackend.exception.EventFullException;
 import com.sandeep.eventrabackend.exception.RegistrationConflictException;
 import com.sandeep.eventrabackend.model.Event;
+import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.EventRepository;
+import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,15 +30,20 @@ class EventRegistrationConcurrencyIntegrationTest {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @BeforeEach
     void setUp() {
         eventRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
     void shouldPreventConcurrentOverbookingWhenCapacityIsOne() throws InterruptedException {
         int threads = 20;
         Event event = createEventWithCapacity(1);
+        createTestUsers(threads);
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         CountDownLatch ready = new CountDownLatch(threads);
@@ -47,12 +54,12 @@ class EventRegistrationConcurrencyIntegrationTest {
         AtomicInteger failureCount = new AtomicInteger();
 
         for (int i = 0; i < threads; i++) {
-            final long userId = i + 1L;
+            final String userEmail = "user" + (i + 1) + "@example.com";
             executor.submit(() -> {
                 try {
                     ready.countDown();
                     start.await();
-                    eventService.registerForEvent(event.getId(), userId);
+                    eventService.registerUserForEvent(event.getId(), userEmail);
                     successCount.incrementAndGet();
                 } catch (EventFullException | RegistrationConflictException ex) {
                     failureCount.incrementAndGet();
@@ -70,7 +77,7 @@ class EventRegistrationConcurrencyIntegrationTest {
         executor.shutdown();
 
         Event updated = eventRepository.findById(event.getId()).orElseThrow();
-        assertEquals(1, updated.getCurrentAttendees());
+        assertEquals(1, updated.getRegisteredCount());
         assertEquals(1, successCount.get());
         assertEquals(threads - 1, failureCount.get());
     }
@@ -82,8 +89,22 @@ class EventRegistrationConcurrencyIntegrationTest {
         event.setLocation("Online");
         event.setEventDate(LocalDateTime.now().plusDays(1));
         event.setPublic(true);
-        event.setMaxAttendees(capacity);
-        event.setCurrentAttendees(0);
+        event.setCapacity(capacity);
+        event.setRegisteredCount(0);
         return eventRepository.saveAndFlush(event);
+    }
+
+    private void createTestUsers(int count) {
+        for (int i = 1; i <= count; i++) {
+            User user = User.builder()
+                    .firstName("Tester" + i)
+                    .lastName("Concurrency")
+                    .email("user" + i + "@example.com")
+                    .username("user" + i)
+                    .password("password")
+                    .role(com.sandeep.eventrabackend.model.Role.CLIENT)
+                    .build();
+            userRepository.save(user);
+        }
     }
 }
