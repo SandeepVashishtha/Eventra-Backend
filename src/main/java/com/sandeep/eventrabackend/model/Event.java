@@ -18,11 +18,27 @@ public class Event {
     private String location;
     private LocalDateTime eventDate;
     private boolean isPublic = true;
-    private int maxAttendees;
-    private int currentAttendees;
 
+    /**
+     * Maximum number of attendees allowed. Null means unlimited.
+     */
     private Integer capacity;
+
+    /**
+     * Current number of confirmed registrations — kept in sync with attendees.size().
+     */
     private int registeredCount = 0;
+
+    /**
+     * Optimistic-lock version field.
+     * Acts as a safety net alongside the pessimistic write-lock used in the
+     * registration flow: if two transactions somehow both pass the capacity
+     * check and attempt to commit, the second one will be rejected by JPA with
+     * an ObjectOptimisticLockingFailureException, which the GlobalExceptionHandler
+     * converts to HTTP 409.
+     */
+    @Version
+    private Long version;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -32,10 +48,21 @@ public class Event {
     )
     private Set<User> attendees = new HashSet<>();
 
-    // Getters and Setters
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    /**
+     * Returns true if the event date is in the past.
+     * Used by the availability response so the frontend can display
+     * a "This event has already passed" notice.
+     */
+    public boolean isEventPast() {
+        return eventDate != null && eventDate.isBefore(LocalDateTime.now());
+    }
+
+    // ── Getters & Setters ────────────────────────────────────────────────────
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -57,6 +84,9 @@ public class Event {
 
     public int getRegisteredCount() { return registeredCount; }
     public void setRegisteredCount(int registeredCount) { this.registeredCount = registeredCount; }
+
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 
     public Set<User> getAttendees() { return attendees; }
     public void setAttendees(Set<User> attendees) { this.attendees = attendees; }
