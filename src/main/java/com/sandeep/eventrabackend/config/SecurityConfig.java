@@ -110,6 +110,12 @@ public CorsConfigurationSource corsConfigurationSource() {
                 .authorizeHttpRequests(auth -> auth
                         // ── Public: Auth endpoints ───────────────────────
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(
+                                "/actuator",
+                                "/actuator/**",
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        ).permitAll()
                         .requestMatchers("/api/contact", "/api/contact/**", "/api/contacts", "/api/contacts/**").permitAll()
                         // ── Public: Swagger / OpenAPI ────────────────────
                         .requestMatchers(

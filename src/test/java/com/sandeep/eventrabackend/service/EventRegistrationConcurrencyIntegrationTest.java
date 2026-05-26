@@ -61,6 +61,7 @@ class EventRegistrationConcurrencyIntegrationTest {
         }
 
         Event event = createEventWithCapacity(1);
+        createTestUsers(threads);
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         CountDownLatch ready = new CountDownLatch(threads);
@@ -109,5 +110,19 @@ class EventRegistrationConcurrencyIntegrationTest {
         event.setCapacity(capacity);
         event.setRegisteredCount(0);
         return eventRepository.saveAndFlush(event);
+    }
+
+    private void createTestUsers(int count) {
+        for (int i = 1; i <= count; i++) {
+            User user = User.builder()
+                    .firstName("Tester" + i)
+                    .lastName("Concurrency")
+                    .email("user" + i + "@example.com")
+                    .username("user" + i)
+                    .password("password")
+                    .role(com.sandeep.eventrabackend.model.Role.CLIENT)
+                    .build();
+            userRepository.save(user);
+        }
     }
 }
