@@ -23,9 +23,9 @@ public class EventController {
 
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get a public event by ID")
-    public ResponseEntity<Event> getPublicEventById(@PathVariable Long id) {
-        Event event = eventService.getPublicEventById(id);
+    @Operation(summary = "Get an event by ID")
+    public ResponseEntity<Event> getEventById(@PathVariable Long id) {
+        Event event = eventService.getEventById(id);
         return ResponseEntity.ok(event);
     }
 

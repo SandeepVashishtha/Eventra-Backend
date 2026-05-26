@@ -24,9 +24,9 @@ public class EventService {
         this.userRepository = userRepository;
     }
 
-    public Event getPublicEventById(long id) {
-        return eventRepository.findByIdAndIsPublicTrue(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found or is not public with id: " + id));
+    public Event getEventById(Long id) {
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
     }
 
     @Transactional
