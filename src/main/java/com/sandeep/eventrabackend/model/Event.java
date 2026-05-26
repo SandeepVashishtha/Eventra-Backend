@@ -24,9 +24,6 @@ public class Event {
     private Integer capacity;
     private int registeredCount = 0;
 
-    @Version
-    private Long version;
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "event_attendees",
@@ -60,9 +57,6 @@ public class Event {
 
     public int getRegisteredCount() { return registeredCount; }
     public void setRegisteredCount(int registeredCount) { this.registeredCount = registeredCount; }
-
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
 
     public Set<User> getAttendees() { return attendees; }
     public void setAttendees(Set<User> attendees) { this.attendees = attendees; }
