@@ -74,8 +74,11 @@ public class EventController {
     public ResponseEntity<RegistrationResponse> registerForEvent(
             @PathVariable Long id,
             Authentication authentication) {
+
         String userEmail = authentication.getName();
-        RegistrationResponse response = eventService.registerUserForEvent(id, userEmail);
+        RegistrationResponse response =
+                eventService.registerUserForEvent(id, userEmail);
+
         return ResponseEntity.ok(response);
     }
 }

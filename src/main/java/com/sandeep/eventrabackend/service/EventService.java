@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
  * <ul>
  *   <li><b>Pessimistic write lock</b> ({@code SELECT … FOR UPDATE}) is acquired
  *       via {@link EventRepository#findByIdWithLock} at the start of every
- *       registration transaction.  Only one thread can hold the lock at a time,
+ *       registration transaction. Only one thread can hold the lock at a time,
  *       so the capacity check and the attendee-set mutation are serialised.</li>
  *   <li><b>Optimistic version field</b> ({@code @Version} on {@link Event}) acts
  *       as a safety net: if two transactions somehow both pass the lock path and
@@ -65,23 +65,30 @@ public class EventService {
      */
     public EventAvailabilityResponse getEventAvailability(Long id) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + id));
+                .orElseThrow(() ->
+                        new EventNotFoundException("Event not found with id: " + id));
 
         Integer capacity = event.getCapacity();
         int registeredCount = event.getRegisteredCount();
-        Integer spotsLeft = (capacity == null) ? null : Math.max(0, capacity - registeredCount);
-        boolean isFull = (capacity != null) && (registeredCount >= capacity);
+
+        Integer spotsLeft =
+                (capacity == null)
+                        ? null
+                        : Math.max(0, capacity - registeredCount);
+
+        boolean isFull =
+                (capacity != null) && (registeredCount >= capacity);
 
         return EventAvailabilityResponse.builder()
                 .capacity(capacity)
                 .registeredCount(registeredCount)
                 .spotsLeft(spotsLeft)
                 .isFull(isFull)
-                .eventPassed(event.isEventPast())   // frontend uses this to show "past event" notice
+                .eventPassed(event.isEventPast())
                 .build();
     }
 
-    // ── Issue #2102 — Event Registration ────────────────────────────────────
+    // ── Issue #2102 — Public Event Fetch ─────────────────────────────────────
 
     /**
      * Retrieves a public event by ID.
@@ -90,7 +97,9 @@ public class EventService {
      */
     public Event getPublicEventById(long id) {
         return eventRepository.findByIdAndIsPublicTrue(id)
-                .orElseThrow(() -> new EventNotFoundException("Event not found or is not public with id: " + id));
+                .orElseThrow(() ->
+                        new EventNotFoundException(
+                                "Event not found or is not public with id: " + id));
     }
 
     /**
@@ -100,67 +109,85 @@ public class EventService {
      * <ol>
      *   <li>Event must exist → 404</li>
      *   <li>User must exist (resolved from JWT email) → 404</li>
-     *   <li>User must not already be registered → 409 {@link RegistrationConflictException}</li>
-     *   <li>Event must not be at capacity → 409 {@link EventFullException}</li>
+     *   <li>User must not already be registered → 409</li>
+     *   <li>Event must not be at capacity → 409</li>
      * </ol>
      *
-     * @param eventId   ID of the event to register for
-     * @param userEmail email extracted from the JWT principal
-     * @return a {@link RegistrationResponse} confirming the registration
+     * @param eventId ID of the event to register for
+     * @param userEmail email extracted from JWT principal
+     * @return registration confirmation response
      */
     @Transactional
     public RegistrationResponse registerUserForEvent(Long eventId, String userEmail) {
+
         ObjectOptimisticLockingFailureException lastConflict = null;
 
         for (int attempt = 1; attempt <= MAX_REGISTRATION_RETRIES; attempt++) {
             try {
                 return executeRegistration(eventId, userEmail);
+
             } catch (ObjectOptimisticLockingFailureException ex) {
                 lastConflict = ex;
-                log.warn("Optimistic lock conflict on event {} (attempt {}/{})", eventId, attempt, MAX_REGISTRATION_RETRIES);
+
+                log.warn(
+                        "Optimistic lock conflict on event {} (attempt {}/{})",
+                        eventId,
+                        attempt,
+                        MAX_REGISTRATION_RETRIES
+                );
             }
         }
 
-        // All retries exhausted — surface as a conflict the caller can understand
-        log.error("Registration failed after {} retries for event {} by {}", MAX_REGISTRATION_RETRIES, eventId, userEmail);
+        log.error(
+                "Registration failed after {} retries for event {} by {}",
+                MAX_REGISTRATION_RETRIES,
+                eventId,
+                userEmail
+        );
+
         throw new RegistrationConflictException(
                 "Registration could not be completed due to high demand. Please try again.");
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
+    // ── Private Helpers ──────────────────────────────────────────────────────
 
-    /**
-     * Core registration logic executed inside a transaction with a pessimistic
-     * write lock on the {@link Event} row.
-     */
-    private RegistrationResponse executeRegistration(Long eventId, String userEmail) {
-        // Pessimistic write lock — serialises concurrent registrations for the same event
+    private RegistrationResponse executeRegistration(
+            Long eventId,
+            String userEmail) {
+
         Event event = eventRepository.findByIdWithLock(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with id: " + eventId));
+                .orElseThrow(() ->
+                        new EventNotFoundException(
+                                "Event not found with id: " + eventId));
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found with email: " + userEmail));
 
-        // Issue #2102: duplicate registration → 409 Conflict (not a silent no-op)
         if (event.getAttendees().contains(user)) {
             throw new RegistrationConflictException(
                     "You are already registered for this event.");
         }
 
-        // Issue #2102: capacity check → 409 Event Full
-        if (event.getCapacity() != null && event.getRegisteredCount() >= event.getCapacity()) {
-            throw new EventFullException("Event is already full. Capacity: " + event.getCapacity());
+        if (event.getCapacity() != null
+                && event.getRegisteredCount() >= event.getCapacity()) {
+
+            throw new EventFullException(
+                    "Event is already full. Capacity: " + event.getCapacity());
         }
 
-        // Register user and update count
         event.getAttendees().add(user);
         event.setRegisteredCount(event.getAttendees().size());
+
         Event saved = eventRepository.save(event);
 
-        // Build spots-remaining value for the response
-        Integer spotsRemaining = (saved.getCapacity() == null)
-                ? null
-                : Math.max(0, saved.getCapacity() - saved.getRegisteredCount());
+        Integer spotsRemaining =
+                (saved.getCapacity() == null)
+                        ? null
+                        : Math.max(
+                                0,
+                                saved.getCapacity() - saved.getRegisteredCount());
 
         return RegistrationResponse.builder()
                 .eventId(saved.getId())
