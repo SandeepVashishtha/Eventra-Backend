@@ -3,6 +3,7 @@ package com.sandeep.eventrabackend.service;
 import com.sandeep.eventrabackend.exception.EventFullException;
 import com.sandeep.eventrabackend.exception.RegistrationConflictException;
 import com.sandeep.eventrabackend.model.Event;
+import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.EventRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
@@ -13,6 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +45,21 @@ class EventRegistrationConcurrencyIntegrationTest {
     @Test
     void shouldPreventConcurrentOverbookingWhenCapacityIsOne() throws InterruptedException {
         int threads = 20;
+
+        List<String> emails = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            String email = "testuser" + i + "@test.com";
+            userRepository.save(User.builder()
+                    .firstName("Test")
+                    .lastName("User" + i)
+                    .email(email)
+                    .username("testuser" + i)
+                    .password("password")
+                    .role(Role.CLIENT)
+                    .build());
+            emails.add(email);
+        }
+
         Event event = createEventWithCapacity(1);
         createTestUsers(threads);
 
@@ -54,12 +72,12 @@ class EventRegistrationConcurrencyIntegrationTest {
         AtomicInteger failureCount = new AtomicInteger();
 
         for (int i = 0; i < threads; i++) {
-            final String userEmail = "user" + (i + 1) + "@example.com";
+            final String email = emails.get(i);
             executor.submit(() -> {
                 try {
                     ready.countDown();
                     start.await();
-                    eventService.registerUserForEvent(event.getId(), userEmail);
+                    eventService.registerUserForEvent(event.getId(), email);
                     successCount.incrementAndGet();
                 } catch (EventFullException | RegistrationConflictException ex) {
                     failureCount.incrementAndGet();
