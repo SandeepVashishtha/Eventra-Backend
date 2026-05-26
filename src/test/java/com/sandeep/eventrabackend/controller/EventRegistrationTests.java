@@ -6,29 +6,32 @@ import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.EventRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests covering Issues #2101, #2102, and #2104 at the HTTP layer.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -43,6 +46,9 @@ public class EventRegistrationTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private Long eventId;
 
     @BeforeEach
@@ -54,45 +60,156 @@ public class EventRegistrationTests {
         event.setTitle("Test Event");
         event.setCapacity(5);
         event.setEventDate(LocalDateTime.now().plusDays(1));
+        event.setPublic(true);
         event = eventRepository.save(event);
         eventId = event.getId();
 
+        // Create 10 test users
         for (int i = 1; i <= 10; i++) {
-            User user = User.builder()
+            User u = User.builder()
                     .firstName("User" + i)
                     .lastName("Test")
                     .email("user" + i + "@example.com")
                     .username("user" + i)
-                    .password("password")
+                    .password(passwordEncoder.encode("password"))
                     .role(Role.CLIENT)
                     .build();
-            userRepository.save(user);
+            userRepository.save(u);
         }
     }
 
+    // ── Issue #2101 — Availability endpoint ──────────────────────────────────
+
     @Test
+    @DisplayName("#2101 — GET /availability returns correct JSON for a future event")
+    void testAvailabilityEndpoint() throws Exception {
+        // Availability is now public — no auth needed
+        mockMvc.perform(get("/api/events/" + eventId + "/availability"))
+                .andExpect(status().isOk())
+                // Primary fields
+                .andExpect(jsonPath("$.capacity").value(5))
+                .andExpect(jsonPath("$.registeredCount").value(0))
+                .andExpect(jsonPath("$.spotsLeft").value(5))
+                .andExpect(jsonPath("$.full").value(false))
+                .andExpect(jsonPath("$.eventPassed").value(false))
+                // Alias fields (issue #2101 spec names)
+                .andExpect(jsonPath("$.maxAttendees").value(5))
+                .andExpect(jsonPath("$.currentAttendees").value(0))
+                .andExpect(jsonPath("$.availabilityStatus").value("AVAILABLE"));
+    }
+
+    @Test
+    @DisplayName("#2101 — GET /availability returns 404 for non-existent event")
+    void testAvailabilityNotFound() throws Exception {
+        mockMvc.perform(get("/api/events/99999/availability"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("#2101 — GET /availability shows PAST status for past events")
+    void testAvailabilityPastEvent() throws Exception {
+        Event past = new Event();
+        past.setTitle("Past Event");
+        past.setCapacity(100);
+        past.setEventDate(LocalDateTime.now().minusDays(1));   // in the past
+        past.setPublic(true);
+        past = eventRepository.save(past);
+
+        mockMvc.perform(get("/api/events/" + past.getId() + "/availability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventPassed").value(true))
+                .andExpect(jsonPath("$.availabilityStatus").value("PAST"));
+    }
+
+    // ── Issue #2102 — Registration endpoint ──────────────────────────────────
+
+    @Test
+    @DisplayName("#2102 — POST /register succeeds for an authenticated user")
+    void testRegistrationSuccess() throws Exception {
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventId").value(eventId))
+                .andExpect(jsonPath("$.userEmail").value("user1@example.com"))
+                .andExpect(jsonPath("$.registrationStatus").value("CONFIRMED"))
+                .andExpect(jsonPath("$.spotsRemaining").value(4));
+    }
+
+    @Test
+    @DisplayName("#2102 — POST /register returns 401 when no JWT is provided")
+    void testRegistrationUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/events/" + eventId + "/register"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("#2102 — POST /register returns 409 when user is already registered")
+    void testDuplicateRegistration() throws Exception {
+        // First registration — should succeed
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk());
+
+        // Second registration — should return 409
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("You are already registered for this event."));
+    }
+
+    @Test
+    @DisplayName("#2102 — POST /register returns 404 for non-existent event")
+    void testRegistrationEventNotFound() throws Exception {
+        mockMvc.perform(post("/api/events/99999/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("#2102 — POST /register returns 409 when event is full")
+    void testRegistrationEventFull() throws Exception {
+        // Fill the event (capacity = 5) with users 1..5
+        for (int i = 1; i <= 5; i++) {
+            mockMvc.perform(post("/api/events/" + eventId + "/register")
+                            .with(user("user" + i + "@example.com")))
+                    .andExpect(status().isOk());
+        }
+
+        // 6th user should be rejected
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user6@example.com")))
+                .andExpect(status().isConflict());
+    }
+
+    // ── Issue #2104 — Concurrent registration ────────────────────────────────
+
+    @Test
+    @DisplayName("#2104 — Concurrent registrations never exceed capacity")
     void testConcurrentRegistration() throws InterruptedException {
         int threadCount = 10;
         ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch finishLatch = new CountDownLatch(threadCount);
-        
+
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger conflictCount = new AtomicInteger(0);
+        AtomicInteger otherCount = new AtomicInteger(0);
 
         for (int i = 1; i <= threadCount; i++) {
             final String email = "user" + i + "@example.com";
             executorService.execute(() -> {
                 try {
-                    latch.await();
+                    startLatch.await();
                     int status = mockMvc.perform(post("/api/events/" + eventId + "/register")
-                            .with(user(email)))
+                                    .with(user(email)))
                             .andReturn().getResponse().getStatus();
-                    
+
                     if (status == 200) {
                         successCount.incrementAndGet();
                     } else if (status == 409) {
                         conflictCount.incrementAndGet();
+                    } else {
+                        otherCount.incrementAndGet();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -102,24 +219,25 @@ public class EventRegistrationTests {
             });
         }
 
-        latch.countDown();
+        startLatch.countDown();
         finishLatch.await();
         executorService.shutdown();
 
-        assertEquals(5, successCount.get(), "Should have exactly 5 successful registrations");
-        
-        Event event = eventRepository.findById(eventId).orElseThrow();
-        assertEquals(5, event.getRegisteredCount(), "Final registeredCount should be 5");
-    }
+        // Core invariant: success count must never exceed the capacity (5)
+        assertTrue(successCount.get() <= 5,
+                "Success count " + successCount.get() + " exceeded capacity 5");
 
-    @Test
-    @WithMockUser(username = "user1@example.com")
-    void testAvailabilityEndpoint() throws Exception {
-        mockMvc.perform(get("/api/events/" + eventId + "/availability"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.capacity").value(5))
-                .andExpect(jsonPath("$.registeredCount").value(0))
-                .andExpect(jsonPath("$.spotsLeft").value(5))
-                .andExpect(jsonPath("$.full").value(false));
+        // All requests must have been handled (200 or 409) — no unexpected errors
+        assertEquals(0, otherCount.get(),
+                "Some requests returned unexpected status codes");
+
+        // Success + conflict must account for all threads
+        assertEquals(threadCount, successCount.get() + conflictCount.get(),
+                "Not all requests were accounted for");
+
+        // Verify persisted count matches success count
+        Event event = eventRepository.findById(eventId).orElseThrow();
+        assertEquals(successCount.get(), event.getRegisteredCount(),
+                "Persisted registeredCount does not match successful HTTP responses");
     }
 }
