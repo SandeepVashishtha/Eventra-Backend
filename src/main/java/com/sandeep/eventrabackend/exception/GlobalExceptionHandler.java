@@ -22,13 +22,6 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(EventFullException.class)
-    public ResponseEntity<ErrorResponse> handleEventFull(
-            EventFullException ex,
-            HttpServletRequest request) {
-        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
-    }
-
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
             ObjectOptimisticLockingFailureException ex,
@@ -75,13 +68,6 @@ public class GlobalExceptionHandler {
             PasswordMismatchException ex,
             HttpServletRequest request) {
         return buildError(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(EventFullException.class)
-    public ResponseEntity<ErrorResponse> handleEventFull(
-            EventFullException ex,
-            HttpServletRequest request) {
-        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
     }
 
     @ExceptionHandler(RegistrationConflictException.class)
