@@ -77,13 +77,6 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);
     }
 
-    @ExceptionHandler(EventFullException.class)
-    public ResponseEntity<ErrorResponse> handleEventFull(
-            EventFullException ex,
-            HttpServletRequest request) {
-        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
-    }
-
     @ExceptionHandler(RegistrationConflictException.class)
     public ResponseEntity<ErrorResponse> handleRegistrationConflict(
             RegistrationConflictException ex,
