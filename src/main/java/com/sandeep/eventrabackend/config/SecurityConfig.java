@@ -17,11 +17,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @Configuration
@@ -108,7 +110,6 @@ public CorsConfigurationSource corsConfigurationSource() {
                 // Stateless sessions — JWT handles auth
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ── Public: Auth endpoints ───────────────────────
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(
                                 "/actuator",
@@ -117,6 +118,10 @@ public CorsConfigurationSource corsConfigurationSource() {
                                 "/actuator/health/**"
                         ).permitAll()
                         .requestMatchers("/api/contact", "/api/contact/**", "/api/contacts", "/api/contacts/**").permitAll()
+                        // ── Public: Event read-only endpoints ────────────────
+                        // Anyone can view an event or check its availability;
+                        // only authenticated users can register (POST).
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events/**").permitAll()
                         // ── Public: Swagger / OpenAPI ────────────────────
                         .requestMatchers(
                                 "/swagger-ui.html",
@@ -129,6 +134,9 @@ public CorsConfigurationSource corsConfigurationSource() {
                         .permitAll()
                         // ── Everything else requires a valid JWT ─────────
                         .anyRequest().authenticated())
+                // Return 401 (not Spring Security's default 403) for missing/invalid JWT
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(unauthorizedEntryPoint()))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(rateLimitingFilter,
                         UsernamePasswordAuthenticationFilter.class)
@@ -136,5 +144,15 @@ public CorsConfigurationSource corsConfigurationSource() {
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Returns HTTP 401 Unauthorized (instead of Spring Security's default 403)
+     * whenever a request hits a protected endpoint without a valid JWT.
+     */
+    @Bean
+    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+        return (request, response, authException) ->
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: valid JWT required");
     }
 }
