@@ -1,6 +1,7 @@
 package com.sandeep.eventrabackend.service;
 
 import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
+import com.sandeep.eventrabackend.dto.request.EventUpdateRequest;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
 import com.sandeep.eventrabackend.dto.response.MyRegisteredEventResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
@@ -151,6 +152,37 @@ public class EventService {
 
         // Ensure registeredCount is 0 for new events
         event.setRegisteredCount(0);
+
+        return eventRepository.save(event);
+    }
+
+    /**
+     * Updates an existing event.
+     *
+     * @param id ID of the event to update
+     * @param request updated event details
+     * @return the updated event
+     * @throws EventNotFoundException if the event does not exist
+     */
+    @Transactional
+    public Event updateEvent(Long id, EventUpdateRequest request) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() ->
+                        new EventNotFoundException("Event not found with id: " + id));
+
+        // Business Rule: Capacity cannot be less than current registrations
+        if (request.getCapacity() != null && request.getCapacity() < event.getRegisteredCount()) {
+            throw new RegistrationConflictException(
+                    "Capacity cannot be reduced below the current number of registered users ("
+                    + event.getRegisteredCount() + ")");
+        }
+
+        event.setTitle(request.getTitle());
+        event.setDescription(request.getDescription());
+        event.setLocation(request.getLocation());
+        event.setEventDate(request.getEventDate());
+        event.setCapacity(request.getCapacity());
+        event.setPublic(request.getIsPublic() == null || request.getIsPublic());
 
         return eventRepository.save(event);
     }

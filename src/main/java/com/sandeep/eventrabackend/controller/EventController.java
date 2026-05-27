@@ -1,6 +1,7 @@
 package com.sandeep.eventrabackend.controller;
 
 import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
+import com.sandeep.eventrabackend.dto.request.EventUpdateRequest;
 import com.sandeep.eventrabackend.dto.response.ErrorResponse;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
@@ -83,6 +84,61 @@ public class EventController {
 
         Event createdEvent = eventService.createEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
+    }
+
+    // ── Issue #2099 — PUT /api/events/{id} ──────────────────────────────────
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
+    @Operation(
+            summary = "Update an existing event",
+            description = "Allows an ORGANIZER or ADMIN to update event details.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Event updated successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = Event.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid payload (validation failed)",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have ORGANIZER or ADMIN role",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Event not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<Event> updateEvent(
+            @Parameter(description = "ID of the event to update")
+            @PathVariable Long id,
+            @Valid @RequestBody EventUpdateRequest request) {
+
+        Event updatedEvent = eventService.updateEvent(id, request);
+        return ResponseEntity.ok(updatedEvent);
     }
 
     // ── Issue #2101 — GET /api/events/{id} ──────────────────────────────────
