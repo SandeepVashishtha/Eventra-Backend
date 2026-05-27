@@ -1,5 +1,6 @@
 package com.sandeep.eventrabackend.service;
 
+import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
 import com.sandeep.eventrabackend.dto.response.MyRegisteredEventResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
@@ -111,6 +112,12 @@ public class EventService {
                                 "Event not found with id: " + id));
     }
 
+    /**
+     * Retrieves events registered by the authenticated user.
+     *
+     * @param userEmail authenticated user's email
+     * @return list of registered events ordered by latest registration
+     */
     @Transactional(readOnly = true)
     public List<MyRegisteredEventResponse> getRegisteredEventsForUser(String userEmail) {
         userRepository.findByEmail(userEmail)
@@ -122,6 +129,30 @@ public class EventService {
                 .stream()
                 .map(this::toMyRegisteredEventResponse)
                 .toList();
+    }
+
+    /**
+     * Creates a new event.
+     *
+     * @param request event creation details
+     * @return the saved event
+     */
+    @Transactional
+    public Event createEvent(EventCreateRequest request) {
+        Event event = new Event();
+        event.setTitle(request.getTitle());
+        event.setDescription(request.getDescription());
+        event.setLocation(request.getLocation());
+        event.setEventDate(request.getEventDate());
+        event.setCapacity(request.getCapacity());
+
+        // Default to true if isPublic is null
+        event.setPublic(request.getIsPublic() == null || request.getIsPublic());
+
+        // Ensure registeredCount is 0 for new events
+        event.setRegisteredCount(0);
+
+        return eventRepository.save(event);
     }
 
     /**
@@ -189,6 +220,7 @@ public class EventService {
 
         if (event.getAttendees().contains(user)
                 || eventRegistrationRepository.existsByEvent_IdAndUser_Email(eventId, userEmail)) {
+
             throw new RegistrationConflictException(
                     "You are already registered for this event.");
         }
@@ -204,11 +236,13 @@ public class EventService {
         event.setRegisteredCount(event.getAttendees().size());
 
         Event saved = eventRepository.save(event);
+
         EventRegistration registration = new EventRegistration();
         registration.setEvent(saved);
         registration.setUser(user);
         registration.setRegisteredAt(LocalDateTime.now());
         registration.setStatus("CONFIRMED");
+
         registration = eventRegistrationRepository.save(registration);
 
         Integer spotsRemaining =
@@ -228,7 +262,9 @@ public class EventService {
                 .build();
     }
 
-    private MyRegisteredEventResponse toMyRegisteredEventResponse(EventRegistration registration) {
+    private MyRegisteredEventResponse toMyRegisteredEventResponse(
+            EventRegistration registration) {
+
         Event event = registration.getEvent();
 
         return MyRegisteredEventResponse.builder()
