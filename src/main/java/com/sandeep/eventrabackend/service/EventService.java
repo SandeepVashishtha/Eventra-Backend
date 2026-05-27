@@ -3,6 +3,7 @@ package com.sandeep.eventrabackend.service;
 import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
 import com.sandeep.eventrabackend.dto.request.EventUpdateRequest;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
+import com.sandeep.eventrabackend.dto.response.EventResponse;
 import com.sandeep.eventrabackend.dto.response.MyRegisteredEventResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
 import com.sandeep.eventrabackend.exception.EventFullException;
@@ -106,8 +107,9 @@ public class EventService {
      *
      * @throws EventNotFoundException if the event does not exist
      */
-    public Event getPublicEventById(long id) {
+    public EventResponse getPublicEventById(long id) {
         return eventRepository.findById(id)
+                .map(this::toEventResponse)
                 .orElseThrow(() ->
                         new EventNotFoundException(
                                 "Event not found with id: " + id));
@@ -139,7 +141,7 @@ public class EventService {
      * @return the saved event
      */
     @Transactional
-    public Event createEvent(EventCreateRequest request) {
+    public EventResponse createEvent(EventCreateRequest request) {
         Event event = new Event();
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
@@ -153,7 +155,8 @@ public class EventService {
         // Ensure registeredCount is 0 for new events
         event.setRegisteredCount(0);
 
-        return eventRepository.save(event);
+        Event saved = eventRepository.save(event);
+        return toEventResponse(saved);
     }
 
     /**
@@ -165,7 +168,7 @@ public class EventService {
      * @throws EventNotFoundException if the event does not exist
      */
     @Transactional
-    public Event updateEvent(Long id, EventUpdateRequest request) {
+    public EventResponse updateEvent(Long id, EventUpdateRequest request) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() ->
                         new EventNotFoundException("Event not found with id: " + id));
@@ -184,7 +187,8 @@ public class EventService {
         event.setCapacity(request.getCapacity());
         event.setPublic(request.getIsPublic() == null || request.getIsPublic());
 
-        return eventRepository.save(event);
+        Event saved = eventRepository.save(event);
+        return toEventResponse(saved);
     }
 
     /**
@@ -324,6 +328,19 @@ public class EventService {
                 .eventDate(event.getEventDate())
                 .registeredAt(registration.getRegisteredAt())
                 .status(registration.getStatus())
+                .build();
+    }
+
+    private EventResponse toEventResponse(Event event) {
+        return EventResponse.builder()
+                .id(event.getId())
+                .title(event.getTitle())
+                .description(event.getDescription())
+                .location(event.getLocation())
+                .eventDate(event.getEventDate())
+                .capacity(event.getCapacity())
+                .registeredCount(event.getRegisteredCount())
+                .isPublic(event.isPublic())
                 .build();
     }
 }
