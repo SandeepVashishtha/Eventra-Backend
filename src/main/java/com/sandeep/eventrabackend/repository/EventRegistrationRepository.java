@@ -12,4 +12,6 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
     boolean existsByEvent_IdAndUser_Email(Long eventId, String userEmail);
 
     List<EventRegistration> findByUser_EmailOrderByRegisteredAtDesc(String userEmail);
+
+    void deleteByEventId(Long eventId);
 }

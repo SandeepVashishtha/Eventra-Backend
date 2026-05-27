@@ -188,6 +188,22 @@ public class EventService {
     }
 
     /**
+     * Deletes an existing event and its registrations.
+     *
+     * @param id ID of the event to delete
+     * @throws EventNotFoundException if the event does not exist
+     */
+    @Transactional
+    public void deleteEvent(Long id) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() ->
+                        new EventNotFoundException("Event not found with id: " + id));
+
+        eventRegistrationRepository.deleteByEventId(id);
+        eventRepository.delete(event);
+    }
+
+    /**
      * Registers the authenticated user for an event.
      *
      * <p>Business rules enforced:

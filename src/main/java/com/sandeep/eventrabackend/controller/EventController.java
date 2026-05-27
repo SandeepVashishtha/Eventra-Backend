@@ -235,27 +235,21 @@ public class EventController {
                     responseCode = "401",
                     description = "Unauthorized - JWT token missing or invalid",
                     content = @Content(
-                            schema = @Schema(
-                                    implementation = ErrorResponse.class
-                            )
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             ),
             @ApiResponse(
                     responseCode = "404",
                     description = "Event or user not found",
                     content = @Content(
-                            schema = @Schema(
-                                    implementation = ErrorResponse.class
-                            )
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             ),
             @ApiResponse(
                     responseCode = "409",
                     description = "Event is already full or user already registered",
                     content = @Content(
-                            schema = @Schema(
-                                    implementation = ErrorResponse.class
-                            )
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             )
     })
@@ -270,5 +264,49 @@ public class EventController {
                 eventService.registerUserForEvent(id, userEmail);
 
         return ResponseEntity.ok(response);
+    }
+
+    // ── Issue #2100 — DELETE /api/events/{id} ───────────────────────────────
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPER_ADMIN')")
+    @Operation(
+            summary = "Delete an event",
+            description = "Allows an ADMIN or SUPER_ADMIN to delete an event.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Event deleted successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have ADMIN or SUPER_ADMIN role",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Event not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<Void> deleteEvent(
+            @Parameter(description = "ID of the event to delete")
+            @PathVariable Long id) {
+
+        eventService.deleteEvent(id);
+        return ResponseEntity.noContent().build();
     }
 }
