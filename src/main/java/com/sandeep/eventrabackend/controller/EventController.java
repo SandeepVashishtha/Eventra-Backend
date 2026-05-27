@@ -4,6 +4,7 @@ import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
 import com.sandeep.eventrabackend.dto.request.EventUpdateRequest;
 import com.sandeep.eventrabackend.dto.response.ErrorResponse;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
+import com.sandeep.eventrabackend.dto.response.EventResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
 import com.sandeep.eventrabackend.model.Event;
 import com.sandeep.eventrabackend.service.EventService;
@@ -54,7 +55,7 @@ public class EventController {
                     responseCode = "201",
                     description = "Event created successfully",
                     content = @Content(
-                            schema = @Schema(implementation = Event.class)
+                            schema = @Schema(implementation = EventResponse.class)
                     )
             ),
             @ApiResponse(
@@ -79,10 +80,10 @@ public class EventController {
                     )
             )
     })
-    public ResponseEntity<Event> createEvent(
+    public ResponseEntity<EventResponse> createEvent(
             @Valid @RequestBody EventCreateRequest request) {
 
-        Event createdEvent = eventService.createEvent(request);
+        EventResponse createdEvent = eventService.createEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
     }
 
@@ -100,7 +101,7 @@ public class EventController {
                     responseCode = "200",
                     description = "Event updated successfully",
                     content = @Content(
-                            schema = @Schema(implementation = Event.class)
+                            schema = @Schema(implementation = EventResponse.class)
                     )
             ),
             @ApiResponse(
@@ -132,12 +133,12 @@ public class EventController {
                     )
             )
     })
-    public ResponseEntity<Event> updateEvent(
+    public ResponseEntity<EventResponse> updateEvent(
             @Parameter(description = "ID of the event to update")
             @PathVariable Long id,
             @Valid @RequestBody EventUpdateRequest request) {
 
-        Event updatedEvent = eventService.updateEvent(id, request);
+        EventResponse updatedEvent = eventService.updateEvent(id, request);
         return ResponseEntity.ok(updatedEvent);
     }
 
@@ -153,7 +154,7 @@ public class EventController {
                     responseCode = "200",
                     description = "Event fetched successfully",
                     content = @Content(
-                            schema = @Schema(implementation = Event.class)
+                            schema = @Schema(implementation = EventResponse.class)
                     )
             ),
             @ApiResponse(
@@ -164,11 +165,11 @@ public class EventController {
                     )
             )
     })
-    public ResponseEntity<Event> getPublicEventById(
+    public ResponseEntity<EventResponse> getPublicEventById(
             @Parameter(description = "ID of the public event")
             @PathVariable Long id) {
 
-        Event event = eventService.getPublicEventById(id);
+        EventResponse event = eventService.getPublicEventById(id);
         return ResponseEntity.ok(event);
     }
 
