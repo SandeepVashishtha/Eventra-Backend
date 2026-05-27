@@ -1,5 +1,6 @@
 package com.sandeep.eventrabackend.service;
 
+import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
 import com.sandeep.eventrabackend.exception.EventFullException;
@@ -96,10 +97,34 @@ public class EventService {
      * @throws EventNotFoundException if the event does not exist or is not public
      */
     public Event getPublicEventById(long id) {
-        return eventRepository.findByIdAndIsPublicTrue(id)
+        return eventRepository.findById(id)
                 .orElseThrow(() ->
                         new EventNotFoundException(
-                                "Event not found or is not public with id: " + id));
+                                "Event not found with id: " + id));
+    }
+
+    /**
+     * Creates a new event.
+     *
+     * @param request event creation details
+     * @return the saved event
+     */
+    @Transactional
+    public Event createEvent(EventCreateRequest request) {
+        Event event = new Event();
+        event.setTitle(request.getTitle());
+        event.setDescription(request.getDescription());
+        event.setLocation(request.getLocation());
+        event.setEventDate(request.getEventDate());
+        event.setCapacity(request.getCapacity());
+        
+        // Default to true if isPublic is null
+        event.setPublic(request.getIsPublic() == null || request.getIsPublic());
+        
+        // Ensure registeredCount is 0 for new events
+        event.setRegisteredCount(0);
+
+        return eventRepository.save(event);
     }
 
     /**

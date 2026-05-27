@@ -1,5 +1,6 @@
 package com.sandeep.eventrabackend.controller;
 
+import com.sandeep.eventrabackend.dto.request.EventCreateRequest;
 import com.sandeep.eventrabackend.dto.response.ErrorResponse;
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
@@ -15,7 +16,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +36,53 @@ public class EventController {
 
     public EventController(EventService eventService) {
         this.eventService = eventService;
+    }
+
+    // ── Issue #2102 — POST /api/events/create ────────────────────────────────
+
+    @PostMapping("/create")
+    @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
+    @Operation(
+            summary = "Create a new event",
+            description = "Allows an ORGANIZER or ADMIN to create a new event. " +
+                          "The event registeredCount defaults to 0.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Event created successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = Event.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid payload (validation failed)",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have ORGANIZER or ADMIN role",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<Event> createEvent(
+            @Valid @RequestBody EventCreateRequest request) {
+
+        Event createdEvent = eventService.createEvent(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
     }
 
     // ── Issue #2101 — GET /api/events/{id} ──────────────────────────────────
