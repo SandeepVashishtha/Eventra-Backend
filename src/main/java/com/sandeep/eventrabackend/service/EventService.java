@@ -1,16 +1,22 @@
 package com.sandeep.eventrabackend.service;
 
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
+import com.sandeep.eventrabackend.dto.response.EventListResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
 import com.sandeep.eventrabackend.exception.EventFullException;
 import com.sandeep.eventrabackend.exception.EventNotFoundException;
 import com.sandeep.eventrabackend.exception.RegistrationConflictException;
 import com.sandeep.eventrabackend.model.Event;
+import com.sandeep.eventrabackend.model.EventStatus;
 import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.EventRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
+import com.sandeep.eventrabackend.specifications.EventSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -51,6 +57,22 @@ public class EventService {
     public EventService(EventRepository eventRepository, UserRepository userRepository) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
+    }
+
+    // ── Issue #2096 — List All Public Events by Pagination ──────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public EventListResponse getPublicEvents(
+            String      search,
+            EventStatus status,
+            String      category,
+            Pageable pageable) {
+
+        Specification<Event> spec =
+                EventSpecification.publicEvents(search, status, category);
+
+        Page<Event> page = eventRepository.findAll(spec, pageable);
+        return EventListResponse.from(page);
     }
 
     // ── Issue #2101 — Event Availability Check ───────────────────────────────
@@ -96,10 +118,10 @@ public class EventService {
      * @throws EventNotFoundException if the event does not exist or is not public
      */
     public Event getPublicEventById(long id) {
-        return eventRepository.findByIdAndIsPublicTrue(id)
+        return eventRepository.findById(id)
                 .orElseThrow(() ->
                         new EventNotFoundException(
-                                "Event not found or is not public with id: " + id));
+                                "Event not found with id: " + id));
     }
 
     /**

@@ -6,7 +6,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+        @Index(name = "idx_event_public",   columnList = "isPublic"),
+        @Index(name = "idx_event_status",   columnList = "status"),
+        @Index(name = "idx_event_category", columnList = "category")
+})
 public class Event {
 
     @Id
@@ -18,6 +22,12 @@ public class Event {
     private String location;
     private LocalDateTime eventDate;
     private boolean isPublic = true;
+
+    private String category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private EventStatus status = EventStatus.UPCOMING;
 
     /**
      * Maximum number of attendees allowed. Null means unlimited.
@@ -78,6 +88,12 @@ public class Event {
 
     public boolean isPublic() { return isPublic; }
     public void setPublic(boolean isPublic) { this.isPublic = isPublic; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public EventStatus getStatus() { return status; }
+    public void setStatus(EventStatus status) { this.status = status; }
 
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
