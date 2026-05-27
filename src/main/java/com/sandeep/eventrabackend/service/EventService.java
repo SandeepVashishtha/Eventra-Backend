@@ -190,9 +190,13 @@ public class EventService {
                         new UsernameNotFoundException(
                                 "User not found with email: " + userEmail));
 
-        if (event.getAttendees().contains(user)) {
-            throw new RegistrationConflictException(
-                    "You are already registered for this event.");
+        // Check unique user-event registration by matching user IDs inside the attendees list
+        boolean isAlreadyRegistered = event.getAttendees().stream()
+        .anyMatch(attendee -> attendee.getId().equals(user.getId()));
+
+        if (isAlreadyRegistered) {
+                throw new RegistrationConflictException(
+                        "You are already registered for this event.");
         }
 
         if (event.getCapacity() != null

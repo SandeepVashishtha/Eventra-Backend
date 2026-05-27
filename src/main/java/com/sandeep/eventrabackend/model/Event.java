@@ -42,9 +42,10 @@ public class Event {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "event_attendees",
-            joinColumns = @JoinColumn(name = "event_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
+        name = "event_attendees",
+        joinColumns = @JoinColumn(name = "event_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id"),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "user_id"})
     )
     private Set<User> attendees = new HashSet<>();
 
