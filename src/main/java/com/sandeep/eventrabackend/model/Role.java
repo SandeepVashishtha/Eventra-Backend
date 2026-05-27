@@ -3,5 +3,6 @@ package com.sandeep.eventrabackend.model;
 public enum Role {
     CLIENT,
     ORGANIZER,
-    ADMIN
+    ADMIN,
+    SUPER_ADMIN
 }
