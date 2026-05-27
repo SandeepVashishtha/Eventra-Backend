@@ -1,12 +1,15 @@
 package com.sandeep.eventrabackend.service;
 
 import com.sandeep.eventrabackend.dto.response.EventAvailabilityResponse;
+import com.sandeep.eventrabackend.dto.response.MyRegisteredEventResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
 import com.sandeep.eventrabackend.exception.EventFullException;
 import com.sandeep.eventrabackend.exception.EventNotFoundException;
 import com.sandeep.eventrabackend.exception.RegistrationConflictException;
 import com.sandeep.eventrabackend.model.Event;
+import com.sandeep.eventrabackend.model.EventRegistration;
 import com.sandeep.eventrabackend.model.User;
+import com.sandeep.eventrabackend.repository.EventRegistrationRepository;
 import com.sandeep.eventrabackend.repository.EventRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.slf4j.Logger;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Service handling event queries and registrations.
@@ -46,10 +50,15 @@ public class EventService {
     private static final int MAX_REGISTRATION_RETRIES = 3;
 
     private final EventRepository eventRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
     private final UserRepository userRepository;
 
-    public EventService(EventRepository eventRepository, UserRepository userRepository) {
+    public EventService(
+            EventRepository eventRepository,
+            EventRegistrationRepository eventRegistrationRepository,
+            UserRepository userRepository) {
         this.eventRepository = eventRepository;
+        this.eventRegistrationRepository = eventRegistrationRepository;
         this.userRepository = userRepository;
     }
 
@@ -88,18 +97,31 @@ public class EventService {
                 .build();
     }
 
-    // ── Issue #2102 — Public Event Fetch ─────────────────────────────────────
+    // ── Issue #2102 — Event Fetch ─────────────────────────────────────
 
     /**
-     * Retrieves a public event by ID.
+     * Retrieves an event by ID.
      *
-     * @throws EventNotFoundException if the event does not exist or is not public
+     * @throws EventNotFoundException if the event does not exist
      */
     public Event getPublicEventById(long id) {
-        return eventRepository.findByIdAndIsPublicTrue(id)
+        return eventRepository.findById(id)
                 .orElseThrow(() ->
                         new EventNotFoundException(
-                                "Event not found or is not public with id: " + id));
+                                "Event not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MyRegisteredEventResponse> getRegisteredEventsForUser(String userEmail) {
+        userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found with email: " + userEmail));
+
+        return eventRegistrationRepository.findByUser_EmailOrderByRegisteredAtDesc(userEmail)
+                .stream()
+                .map(this::toMyRegisteredEventResponse)
+                .toList();
     }
 
     /**
@@ -165,7 +187,8 @@ public class EventService {
                         new UsernameNotFoundException(
                                 "User not found with email: " + userEmail));
 
-        if (event.getAttendees().contains(user)) {
+        if (event.getAttendees().contains(user)
+                || eventRegistrationRepository.existsByEvent_IdAndUser_Email(eventId, userEmail)) {
             throw new RegistrationConflictException(
                     "You are already registered for this event.");
         }
@@ -181,6 +204,12 @@ public class EventService {
         event.setRegisteredCount(event.getAttendees().size());
 
         Event saved = eventRepository.save(event);
+        EventRegistration registration = new EventRegistration();
+        registration.setEvent(saved);
+        registration.setUser(user);
+        registration.setRegisteredAt(LocalDateTime.now());
+        registration.setStatus("CONFIRMED");
+        registration = eventRegistrationRepository.save(registration);
 
         Integer spotsRemaining =
                 (saved.getCapacity() == null)
@@ -193,9 +222,24 @@ public class EventService {
                 .eventId(saved.getId())
                 .eventTitle(saved.getTitle())
                 .userEmail(userEmail)
-                .registeredAt(LocalDateTime.now())
+                .registeredAt(registration.getRegisteredAt())
                 .spotsRemaining(spotsRemaining)
-                .registrationStatus("CONFIRMED")
+                .registrationStatus(registration.getStatus())
+                .build();
+    }
+
+    private MyRegisteredEventResponse toMyRegisteredEventResponse(EventRegistration registration) {
+        Event event = registration.getEvent();
+
+        return MyRegisteredEventResponse.builder()
+                .registrationId(registration.getId())
+                .eventId(event.getId())
+                .title(event.getTitle())
+                .description(event.getDescription())
+                .location(event.getLocation())
+                .eventDate(event.getEventDate())
+                .registeredAt(registration.getRegisteredAt())
+                .status(registration.getStatus())
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.sandeep.eventrabackend.controller;
 import com.sandeep.eventrabackend.model.Event;
 import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
+import com.sandeep.eventrabackend.repository.EventRegistrationRepository;
 import com.sandeep.eventrabackend.repository.EventRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -44,6 +46,9 @@ public class EventRegistrationTests {
     private EventRepository eventRepository;
 
     @Autowired
+    private EventRegistrationRepository eventRegistrationRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -53,6 +58,7 @@ public class EventRegistrationTests {
 
     @BeforeEach
     void setUp() {
+        eventRegistrationRepository.deleteAll();
         eventRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -133,6 +139,97 @@ public class EventRegistrationTests {
                 .andExpect(jsonPath("$.userEmail").value("user1@example.com"))
                 .andExpect(jsonPath("$.registrationStatus").value("CONFIRMED"))
                 .andExpect(jsonPath("$.spotsRemaining").value(4));
+    }
+
+    @Test
+    @DisplayName("#2105 - GET /api/users/my-events returns the authenticated user's registrations")
+    void testGetMyRegisteredEvents() throws Exception {
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registeredAt").exists());
+
+        mockMvc.perform(get("/api/users/my-events")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].eventId").value(eventId))
+                .andExpect(jsonPath("$[0].title").value("Test Event"))
+                .andExpect(jsonPath("$[0].eventDate").exists())
+                .andExpect(jsonPath("$[0].date").exists())
+                .andExpect(jsonPath("$[0].time").exists())
+                .andExpect(jsonPath("$[0].status").value("CONFIRMED"))
+                .andExpect(jsonPath("$[0].registeredAt").exists());
+    }
+
+    @Test
+    @DisplayName("#2105 - GET /api/users/my-events does not leak another user's registrations")
+    void testGetMyRegisteredEventsUserIsolation() throws Exception {
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/my-events")
+                        .with(user("user2@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @DisplayName("#2105 - GET /api/users/my-events returns all registrations for the authenticated user")
+    void testGetMyRegisteredEventsMultipleRegistrations() throws Exception {
+        Event secondEvent = new Event();
+        secondEvent.setTitle("Second Test Event");
+        secondEvent.setDescription("Another event for the same user");
+        secondEvent.setLocation("Online");
+        secondEvent.setCapacity(10);
+        secondEvent.setEventDate(LocalDateTime.now().plusDays(2));
+        secondEvent.setPublic(true);
+        secondEvent = eventRepository.save(secondEvent);
+
+        mockMvc.perform(post("/api/events/" + eventId + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/events/" + secondEvent.getId() + "/register")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/my-events")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[*].eventId", containsInAnyOrder(
+                        eventId.intValue(),
+                        secondEvent.getId().intValue()
+                )));
+    }
+
+    @Test
+    @DisplayName("#2105 - GET /api/users/my-events returns an empty list when the user has no registrations")
+    void testGetMyRegisteredEventsEmpty() throws Exception {
+        mockMvc.perform(get("/api/users/my-events")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    @DisplayName("#2105 - GET /api/users/my-events returns 401 when no JWT is provided")
+    void testGetMyRegisteredEventsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/users/my-events"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("#2105 - GET /api/users/my-events returns 404 when the authenticated principal is not a stored user")
+    void testGetMyRegisteredEventsUnknownUser() throws Exception {
+        mockMvc.perform(get("/api/users/my-events")
+                        .with(user("missing@example.com")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("User not found with email: missing@example.com"));
     }
 
     @Test
