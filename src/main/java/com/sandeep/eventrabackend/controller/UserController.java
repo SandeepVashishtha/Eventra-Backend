@@ -16,6 +16,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.sandeep.eventrabackend.dto.request.UpdateUserProfileRequest;
+import com.sandeep.eventrabackend.dto.response.UserProfileResponse;
+import com.sandeep.eventrabackend.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -25,9 +31,79 @@ import java.util.List;
 public class UserController {
 
     private final EventService eventService;
+    private final UserService userService;
 
-    public UserController(EventService eventService) {
+    public UserController(
+            EventService eventService,
+            UserService userService
+    ) {
         this.eventService = eventService;
+        this.userService = userService;
+    }
+
+    @PutMapping("/profile")
+    @Operation(
+            summary = "Update authenticated user profile",
+            description = """
+                Updates editable profile information for the currently authenticated user.
+                
+                Requires a valid JWT token.
+                
+                Editable fields:
+                - firstName
+                - lastName
+                """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Profile updated successfully",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = UserProfileResponse.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation error",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ErrorResponse.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ErrorResponse.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Authenticated user not found",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ErrorResponse.class
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<UserProfileResponse> updateProfile(
+            @Valid @RequestBody UpdateUserProfileRequest request,
+            Authentication authentication
+    ) {
+
+        return ResponseEntity.ok(
+                userService.updateProfile(
+                        authentication.getName(),
+                        request
+                )
+        );
     }
 
     @GetMapping("/my-events")
