@@ -98,9 +98,13 @@ public class UserController {
             Authentication authentication
     ) {
 
+        // Extract authenticated user's email from JWT security context
+        String authenticatedEmail = authentication.getName();
+
+        // Delegate profile update logic to service layer
         return ResponseEntity.ok(
                 userService.updateProfile(
-                        authentication.getName(),
+                        authenticatedEmail,
                         request
                 )
         );

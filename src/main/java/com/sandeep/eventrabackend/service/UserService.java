@@ -17,22 +17,28 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+
+    // Uses authenticated email extracted from Spring Security JWT context
+    // to identify and update the currently logged-in user
     @Transactional
     public UserProfileResponse updateProfile(
             String authenticatedEmail,
             UpdateUserProfileRequest request
     ) {
 
+        // Fetch currently authenticated user from database
         User user = userRepository.findByEmail(authenticatedEmail)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "Authenticated user not found"));
 
+        // Update editable profile fields
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
 
         User updatedUser = userRepository.save(user);
 
+        // Return updated user profile response
         return mapToProfileResponse(updatedUser);
     }
 
