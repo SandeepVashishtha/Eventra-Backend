@@ -1,12 +1,13 @@
 package com.sandeep.eventrabackend.dto.response;
 
-import com.sandeep.eventrabackend.model.Role;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Authenticated user profile response")
 public class UserProfileResponse {
 
@@ -26,5 +27,5 @@ public class UserProfileResponse {
     private String email;
 
     @Schema(description = "User role", example = "CLIENT")
-    private Role role;
+    private String role;
 }

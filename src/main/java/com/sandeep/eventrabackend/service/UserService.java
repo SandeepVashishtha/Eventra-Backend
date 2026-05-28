@@ -50,7 +50,7 @@ public class UserService {
                 .lastName(user.getLastName())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole())
+                .role(user.getRole() != null ? user.getRole().name() : null)
                 .build();
     }
 }
