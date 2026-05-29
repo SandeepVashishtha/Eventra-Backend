@@ -1,5 +1,7 @@
 package com.sandeep.eventrabackend.controller;
 
+import com.sandeep.eventrabackend.dto.response.ProjectResponse;
+import com.sandeep.eventrabackend.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,6 +21,12 @@ import java.util.List;
 @Tag(name = "Projects", description = "Endpoints for managing and interacting with projects")
 public class ProjectController {
 
+    private final ProjectService projectService;
+
+    public ProjectController(ProjectService projectService) {
+        this.projectService = projectService;
+    }
+
     private static final List<String> CATEGORIES = List.of(
             "Mobile Development",
             "Web Development",
@@ -29,6 +37,24 @@ public class ProjectController {
             "IoT",
             "Blockchain"
     );
+
+    @GetMapping
+    @Operation(
+            summary = "Get all projects",
+            description = "Returns a list of all available projects."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Projects fetched successfully",
+                    content = @Content(
+                            array = @ArraySchema(schema = @Schema(implementation = ProjectResponse.class))
+                    )
+            )
+    })
+    public ResponseEntity<List<ProjectResponse>> getAllProjects() {
+        return ResponseEntity.ok(projectService.getAllProjects());
+    }
 
     @GetMapping("/categories")
     @Operation(
