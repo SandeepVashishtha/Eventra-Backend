@@ -1,6 +1,7 @@
 package com.sandeep.eventrabackend.service;
 
 import com.sandeep.eventrabackend.dto.response.ProjectResponse;
+import com.sandeep.eventrabackend.exception.ProjectNotFoundException;
 import com.sandeep.eventrabackend.model.Project;
 import com.sandeep.eventrabackend.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,13 @@ public class ProjectService {
         return projectRepository.findAll().stream()
                 .map(this::toProjectResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectResponse getProjectById(Long id) {
+        return projectRepository.findById(id)
+                .map(this::toProjectResponse)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
     }
 
     private ProjectResponse toProjectResponse(Project project) {
