@@ -122,6 +122,8 @@ public CorsConfigurationSource corsConfigurationSource() {
                         // Anyone can view an event or check its availability;
                         // only authenticated users can register (POST).
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events/**").permitAll()
+                        // ── Public: Project categories endpoint ──────────────
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/projects/categories").permitAll()
                         // ── Public: Swagger / OpenAPI ────────────────────
                         .requestMatchers(
                                 "/swagger-ui.html",
