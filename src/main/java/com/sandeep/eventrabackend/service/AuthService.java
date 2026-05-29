@@ -9,6 +9,7 @@ import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import com.sandeep.eventrabackend.security.JwtTokenProvider;
+import com.sandeep.eventrabackend.security.TokenBlacklistService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,18 +28,21 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final GoogleAuthService googleAuthService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public AuthService(UserRepository userRepository,
                    PasswordEncoder passwordEncoder,
                    AuthenticationManager authenticationManager,
                    JwtTokenProvider jwtTokenProvider,
-                   GoogleAuthService googleAuthService) {
+                   GoogleAuthService googleAuthService,
+                   TokenBlacklistService tokenBlacklistService) {
 
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.jwtTokenProvider = jwtTokenProvider;
     this.googleAuthService = googleAuthService;
+    this.tokenBlacklistService = tokenBlacklistService;
 }
 
     @Transactional
@@ -157,6 +161,11 @@ if (lastName == null || lastName.isBlank()) {
         );
     }
 }
+
+    public void logout(String token) {
+        java.util.Date expiration = jwtTokenProvider.getExpirationDateFromToken(token);
+        tokenBlacklistService.addToBlacklist(token, expiration);
+    }
 
     // ─── helpers ────────────────────────────────────────────────────────────────
 

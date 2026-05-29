@@ -123,4 +123,27 @@ public ResponseEntity<AuthResponse> googleLogin(
 
     return ResponseEntity.ok(response);
 }
+
+    @PostMapping("/logout")
+    @Operation(
+            summary = "Logout user and invalidate token",
+            description = """
+                    Blacklists the provided JWT token so it cannot be used again until it expires.
+                    
+                    Requires `Authorization: Bearer <token>` header.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Logged out successfully"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid token",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String bearerToken) {
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            authService.logout(token);
+            return ResponseEntity.ok("Logged out successfully");
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token format");
+    }
 }
