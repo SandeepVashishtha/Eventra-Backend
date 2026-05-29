@@ -20,6 +20,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import com.sandeep.eventrabackend.dto.request.UpdateUserProfileRequest;
+import com.sandeep.eventrabackend.dto.response.UserProfileResponse;
+import com.sandeep.eventrabackend.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,10 +34,16 @@ import java.util.List;
 public class UserController {
 
     private final EventService eventService;
+    private final UserService userService;
     private final UserRepository userRepository;
 
-    public UserController(EventService eventService, UserRepository userRepository) {
+    public UserController(
+            EventService eventService,
+            UserService userService,
+            UserRepository userRepository
+    ) {
         this.eventService = eventService;
+        this.userService = userService;
         this.userRepository = userRepository;
     }
 
@@ -61,9 +71,13 @@ public class UserController {
             )
     })
     public ResponseEntity<UserProfileResponse> getUserProfile(Authentication authentication) {
+
         String email = authentication.getName();
+
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "User not found with email: " + email));
 
         return ResponseEntity.ok(mapToUserProfileResponse(user));
     }
@@ -121,6 +135,75 @@ public class UserController {
 
         User updatedUser = userRepository.save(user);
         return ResponseEntity.ok(mapToUserProfileResponse(updatedUser));
+    }
+
+    @PutMapping("/profile")
+    @Operation(
+            summary = "Update authenticated user profile",
+            description = """
+            Updates editable profile information for the currently authenticated user.
+            
+            Requires a valid JWT token.
+            
+            Editable fields:
+            - firstName
+            - lastName
+            """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Profile updated successfully",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = UserProfileResponse.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation error",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ErrorResponse.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ErrorResponse.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Authenticated user not found",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ErrorResponse.class
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<UserProfileResponse> updateProfile(
+            @Valid @RequestBody UpdateUserProfileRequest request,
+            Authentication authentication
+    ) {
+
+        // Extract authenticated user's email from JWT security context
+        String authenticatedEmail = authentication.getName();
+
+        // Delegate profile update logic to service layer
+        return ResponseEntity.ok(
+                userService.updateProfile(
+                        authenticatedEmail,
+                        request
+                )
+        );
     }
 
     @GetMapping("/my-events")
