@@ -1,10 +1,7 @@
 package com.sandeep.eventrabackend.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,7 +33,7 @@ public class EventCreateRequest {
     @Schema(description = "Date and time when the event starts")
     private LocalDateTime eventDate;
 
-    @Positive(message = "Capacity must be positive")
+    @Min(value = 1, message = "Capacity must be at least 1")
     @Schema(description = "Maximum number of attendees allowed (null for unlimited)", example = "100")
     private Integer capacity;
 
