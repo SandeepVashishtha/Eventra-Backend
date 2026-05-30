@@ -86,4 +86,42 @@ public class ProjectControllerTests {
                         "Blockchain"
                 )));
     }
+
+    @Test
+    void testGetProjectById_Exists_ReturnsProject() throws Exception {
+        Project project = Project.builder()
+                .title("Single Project")
+                .description("Detail Description")
+                .category("Mobile Development")
+                .thumbnailUrl("http://example.com/single.png")
+                .githubUrl("http://github.com/test/single")
+                .upvotes(5)
+                .build();
+        project = projectRepository.save(project);
+
+        mockMvc.perform(get("/api/projects/" + project.getId())
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(project.getId()))
+                .andExpect(jsonPath("$.title").value("Single Project"))
+                .andExpect(jsonPath("$.description").value("Detail Description"))
+                .andExpect(jsonPath("$.category").value("Mobile Development"))
+                .andExpect(jsonPath("$.thumbnailUrl").value("http://example.com/single.png"))
+                .andExpect(jsonPath("$.githubUrl").value("http://github.com/test/single"))
+                .andExpect(jsonPath("$.upvotes").value(5));
+    }
+
+    @Test
+    void testGetProjectById_NotFound_Returns404() throws Exception {
+        mockMvc.perform(get("/api/projects/999")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Project not found with id: 999"))
+                .andExpect(jsonPath("$.path").value("/api/projects/999"))
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
 }

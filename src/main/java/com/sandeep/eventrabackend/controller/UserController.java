@@ -137,6 +137,7 @@ public class UserController {
         return ResponseEntity.ok(mapToUserProfileResponse(updatedUser));
     }
 
+/*
     @PutMapping("/profile")
     @Operation(
             summary = "Update authenticated user profile",
@@ -205,6 +206,7 @@ public class UserController {
                 )
         );
     }
+*/
 
     @GetMapping("/my-events")
     @Operation(

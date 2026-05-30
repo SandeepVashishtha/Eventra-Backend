@@ -125,6 +125,7 @@ public CorsConfigurationSource corsConfigurationSource() {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events/**").permitAll()
                         // ── Public: Projects endpoint ────────────────────────
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/projects").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/projects/{id}").permitAll()
                         // ── Public: Project categories endpoint ──────────────
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/projects/categories").permitAll()
                         // ── Public: Swagger / OpenAPI ────────────────────
