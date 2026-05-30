@@ -39,10 +39,14 @@ public class AuthLogoutTests {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.sandeep.eventrabackend.security.TokenBlacklistService tokenBlacklistService;
+
     private String jwtToken;
 
     @BeforeEach
     void setUp() throws Exception {
+        tokenBlacklistService.clear();
         userRepository.deleteAll();
 
         // Create a test user

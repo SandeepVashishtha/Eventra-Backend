@@ -1,5 +1,6 @@
 package com.sandeep.eventrabackend.service;
 
+import com.sandeep.eventrabackend.dto.request.ProjectCreateRequest;
 import com.sandeep.eventrabackend.dto.response.ProjectResponse;
 import com.sandeep.eventrabackend.exception.ProjectNotFoundException;
 import com.sandeep.eventrabackend.model.Project;
@@ -17,6 +18,20 @@ public class ProjectService {
 
     public ProjectService(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
+    }
+
+    @Transactional
+    public ProjectResponse createProject(ProjectCreateRequest request) {
+        Project project = Project.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .category(request.getCategory())
+                .thumbnailUrl(request.getThumbnailUrl())
+                .githubUrl(request.getGithubUrl())
+                .build();
+
+        Project savedProject = projectRepository.save(project);
+        return toProjectResponse(savedProject);
     }
 
     @Transactional(readOnly = true)

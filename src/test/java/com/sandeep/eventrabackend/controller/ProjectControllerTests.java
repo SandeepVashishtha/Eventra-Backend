@@ -1,5 +1,7 @@
 package com.sandeep.eventrabackend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sandeep.eventrabackend.dto.request.ProjectCreateRequest;
 import com.sandeep.eventrabackend.model.Project;
 import com.sandeep.eventrabackend.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,6 +19,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -29,9 +33,79 @@ public class ProjectControllerTests {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     void setUp() {
         projectRepository.deleteAll();
+    }
+
+    @Test
+    @WithMockUser(authorities = "ADMIN")
+    void testCreateProject_Success_Returns201() throws Exception {
+        ProjectCreateRequest request = ProjectCreateRequest.builder()
+                .title("New Project")
+                .description("New Description")
+                .category("Web Development")
+                .thumbnailUrl("http://example.com/new.png")
+                .githubUrl("http://github.com/new/repo")
+                .build();
+
+        mockMvc.perform(post("/api/projects")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("New Project"))
+                .andExpect(jsonPath("$.description").value("New Description"))
+                .andExpect(jsonPath("$.category").value("Web Development"))
+                .andExpect(jsonPath("$.thumbnailUrl").value("http://example.com/new.png"))
+                .andExpect(jsonPath("$.githubUrl").value("http://github.com/new/repo"))
+                .andExpect(jsonPath("$.upvotes").value(0));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ADMIN")
+    void testCreateProject_ValidationFailure_Returns400() throws Exception {
+        ProjectCreateRequest request = ProjectCreateRequest.builder()
+                .title("") // Blank title
+                .description("New Description")
+                .category("Web Development")
+                .build();
+
+        mockMvc.perform(post("/api/projects")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testCreateProject_Unauthenticated_Returns401() throws Exception {
+        ProjectCreateRequest request = ProjectCreateRequest.builder()
+                .title("New Project")
+                .description("New Description")
+                .category("Web Development")
+                .build();
+
+        mockMvc.perform(post("/api/projects")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CLIENT")
+    void testCreateProject_ForbiddenRole_Returns403() throws Exception {
+        ProjectCreateRequest request = ProjectCreateRequest.builder()
+                .title("New Project")
+                .description("New Description")
+                .category("Web Development")
+                .build();
+
+        mockMvc.perform(post("/api/projects")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
