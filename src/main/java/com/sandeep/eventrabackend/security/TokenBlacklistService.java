@@ -21,6 +21,14 @@ public class TokenBlacklistService {
         return blacklist.containsKey(token);
     }
 
+    /**
+     * Clears the entire blacklist.
+     * Primarily used for test isolation.
+     */
+    public void clear() {
+        blacklist.clear();
+    }
+
     // Clean up expired tokens every hour to prevent memory leaks
     @Scheduled(fixedRate = 3600000)
     public void cleanUpBlacklist() {
