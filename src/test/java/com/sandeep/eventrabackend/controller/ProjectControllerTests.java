@@ -198,4 +198,38 @@ public class ProjectControllerTests {
                 .andExpect(jsonPath("$.path").value("/api/projects/999"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
+
+    @Test
+    @WithMockUser(authorities = "CLIENT")
+    void testUpvoteProject_Success_Returns200() throws Exception {
+        Project project = Project.builder()
+                .title("Upvote Project")
+                .description("Description")
+                .category("DevOps")
+                .upvotes(5)
+                .build();
+        project = projectRepository.save(project);
+
+        mockMvc.perform(post("/api/projects/" + project.getId() + "/upvote")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(project.getId()))
+                .andExpect(jsonPath("$.upvotes").value(6));
+    }
+
+    @Test
+    void testUpvoteProject_Unauthenticated_Returns401() throws Exception {
+        mockMvc.perform(post("/api/projects/1/upvote")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CLIENT")
+    void testUpvoteProject_NotFound_Returns404() throws Exception {
+        mockMvc.perform(post("/api/projects/999/upvote")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Project not found with id: 999"));
+    }
 }

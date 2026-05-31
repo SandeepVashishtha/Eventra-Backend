@@ -147,4 +147,40 @@ public class ProjectController {
     public ResponseEntity<List<String>> getCategories() {
         return ResponseEntity.ok(CATEGORIES);
     }
+
+    @PostMapping("/{id}/upvote")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Upvote a project",
+            description = "Allows any authenticated user to increment the upvote count of a project by 1.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Project upvoted successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = ProjectResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Project not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<ProjectResponse> upvoteProject(
+            @Parameter(description = "ID of the project to upvote")
+            @PathVariable Long id) {
+        return ResponseEntity.ok(projectService.upvoteProject(id));
+    }
 }
