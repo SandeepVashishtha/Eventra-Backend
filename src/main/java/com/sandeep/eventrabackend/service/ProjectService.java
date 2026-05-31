@@ -48,6 +48,14 @@ public class ProjectService {
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
     }
 
+    @Transactional
+    public ProjectResponse upvoteProject(Long id) {
+        if (projectRepository.incrementUpvotes(id) == 0) {
+            throw new ProjectNotFoundException("Project not found with id: " + id);
+        }
+        return getProjectById(id);
+    }
+
     private ProjectResponse toProjectResponse(Project project) {
         return ProjectResponse.builder()
                 .id(project.getId())
