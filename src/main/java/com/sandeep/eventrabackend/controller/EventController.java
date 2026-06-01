@@ -8,6 +8,7 @@ import com.sandeep.eventrabackend.dto.response.EventResponse;
 import com.sandeep.eventrabackend.dto.response.RegistrationResponse;
 import com.sandeep.eventrabackend.model.Event;
 import com.sandeep.eventrabackend.service.EventService;
+import com.sandeep.eventrabackend.service.EventStreamService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,10 +21,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 
 @RestController
@@ -35,9 +38,11 @@ import org.springframework.web.bind.annotation.*;
 public class EventController {
 
     private final EventService eventService;
+    private final EventStreamService eventStreamService;
 
-    public EventController(EventService eventService) {
+    public EventController(EventService eventService, EventStreamService eventStreamService) {
         this.eventService = eventService;
+        this.eventStreamService = eventStreamService;
     }
 
     // ── Issue #2102 — POST /api/events/create ────────────────────────────────
@@ -140,6 +145,23 @@ public class EventController {
 
         EventResponse updatedEvent = eventService.updateEvent(id, request);
         return ResponseEntity.ok(updatedEvent);
+    }
+
+    // ── GET /api/events/stream ───────────────────────────────────────────────
+
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(
+            summary = "Stream event updates",
+            description = "Establishes a Server-Sent Events (SSE) connection to receive real-time event updates."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "SSE connection established"
+            )
+    })
+    public SseEmitter streamEvents() {
+        return eventStreamService.createEmitter();
     }
 
     // ── Issue #2101 — GET /api/events/{id} ──────────────────────────────────
