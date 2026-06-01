@@ -70,6 +70,39 @@ public class HackathonControllerTests {
     }
 
     @Test
+    void getHackathonById_ShouldReturnHackathon_WhenHackathonExists() throws Exception {
+        Hackathon hackathon = Hackathon.builder()
+                .title("Single Hackathon")
+                .organizer("Organizer X")
+                .build();
+        hackathon = hackathonRepository.save(hackathon);
+
+        mockMvc.perform(get("/api/hackathons/" + hackathon.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Single Hackathon"))
+                .andExpect(jsonPath("$.organizer").value("Organizer X"));
+    }
+
+    @Test
+    void getHackathonById_ShouldReturn404_WhenHackathonDoesNotExist() throws Exception {
+        mockMvc.perform(get("/api/hackathons/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Hackathon not found with id: 999"));
+    }
+
+    @Test
+    void getHackathonById_ShouldBePubliclyAccessible() throws Exception {
+        Hackathon hackathon = Hackathon.builder()
+                .title("Public Hackathon")
+                .organizer("Public Org")
+                .build();
+        hackathon = hackathonRepository.save(hackathon);
+
+        mockMvc.perform(get("/api/hackathons/" + hackathon.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void getAllHackathons_ShouldBePubliclyAccessible() throws Exception {
         // No authentication provided
         mockMvc.perform(get("/api/hackathons"))
