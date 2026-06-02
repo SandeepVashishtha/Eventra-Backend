@@ -25,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
@@ -34,6 +35,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
     private final UserDetailsService userDetailsService;
+
+    @Value("${app.cors.allowed-origins:http://localhost:3000,https://eventra.vercel.app,https://eventra.sandeepvashishtha.tech}")
+    private String allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
             RateLimitingFilter rateLimitingFilter,
@@ -47,36 +51,37 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     @Bean
-public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
 
-    CorsConfiguration configuration =
-            new CorsConfiguration();
+        String[] origins = allowedOrigins.split(",");
+        for (int i = 0; i < origins.length; i++) {
+            origins[i] = origins[i].trim();
+        }
+        configuration.setAllowedOrigins(List.of(origins));
 
-    configuration.setAllowedOrigins(
-            List.of("http://localhost:3000")
-    );
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        );
 
-    configuration.setAllowedMethods(
-            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
-    );
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
 
-    configuration.setAllowedHeaders(
-            List.of("*")
-    );
+        configuration.setAllowCredentials(true);
 
-    configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
 
-    UrlBasedCorsConfigurationSource source =
-            new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
 
-    source.registerCorsConfiguration(
-            "/**",
-            configuration
-    );
-
-    return source;
-}
+        return source;
+    }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
