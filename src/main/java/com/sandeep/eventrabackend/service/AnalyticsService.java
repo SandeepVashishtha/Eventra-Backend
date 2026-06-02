@@ -57,14 +57,14 @@ public class AnalyticsService {
             default       -> regRepo.findMonthlyTrend(from);
         };
 
-        long cumulative = 0;
+        final long[] cumulative = {0};
         return raw.stream().map(row -> {
             long count = ((Number) row[1]).longValue();
-            cumulative += count;
+            cumulative[0] += count;
             return RegistrationTrendDTO.builder()
                 .period(row[0].toString())
                 .registrationCount(count)
-                .cumulativeTotal(cumulative)
+                .cumulativeTotal(cumulative[0])
                 .build();
         }).collect(Collectors.toList());
     }
@@ -136,4 +136,10 @@ public class AnalyticsService {
             })
             .collect(Collectors.toList());
     }
+
+    // ── 6. Organizer insights ────────────────────────────────────────────────
+    public List<OrganizerInsightDTO> getOrganizerInsights() {
+        return List.of();
+    }
 }
+
