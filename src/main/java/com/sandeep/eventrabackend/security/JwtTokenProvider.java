@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
@@ -23,6 +24,21 @@ public class JwtTokenProvider {
 
     @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
+
+    @PostConstruct
+    public void validateSecret() {
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT_SECRET environment variable is not set. " +
+                    "Application cannot start without a valid JWT signing key. " +
+                    "Generate one with: openssl rand -base64 32"
+            );
+        }
+        if (jwtSecret.length() < 32) {
+            logger.warn("JWT_SECRET is shorter than 32 characters. " +
+                        "For production, use a 256-bit key: openssl rand -base64 32");
+        }
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(
