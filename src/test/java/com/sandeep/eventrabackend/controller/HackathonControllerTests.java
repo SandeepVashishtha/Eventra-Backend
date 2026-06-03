@@ -1,13 +1,16 @@
 package com.sandeep.eventrabackend.controller;
 
+import com.sandeep.eventrabackend.dto.request.HackathonCreateRequest;
 import com.sandeep.eventrabackend.model.Hackathon;
 import com.sandeep.eventrabackend.repository.HackathonRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -15,6 +18,7 @@ import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -28,9 +32,78 @@ public class HackathonControllerTests {
     @Autowired
     private HackathonRepository hackathonRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     void setUp() {
         hackathonRepository.deleteAll();
+    }
+
+    @Test
+    @WithMockUser(authorities = "ADMIN")
+    void createHackathon_ShouldReturnCreated_WhenAuthorized() throws Exception {
+        HackathonCreateRequest request = HackathonCreateRequest.builder()
+                .title("New Hackathon")
+                .description("Desc")
+                .organizer("Org")
+                .startDate(LocalDateTime.now().plusDays(5))
+                .endDate(LocalDateTime.now().plusDays(7))
+                .location("Virtual")
+                .mode("Online")
+                .registrationDeadline(LocalDateTime.now().plusDays(2))
+                .build();
+
+        mockMvc.perform(post("/api/hackathons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("New Hackathon"));
+    }
+
+    @Test
+    void createHackathon_ShouldReturn401_WhenUnauthenticated() throws Exception {
+        HackathonCreateRequest request = HackathonCreateRequest.builder()
+                .title("Unauthorized Hackathon")
+                .build();
+
+        mockMvc.perform(post("/api/hackathons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CLIENT")
+    void createHackathon_ShouldReturn403_WhenForbidden() throws Exception {
+        HackathonCreateRequest request = HackathonCreateRequest.builder()
+                .title("Forbidden Hackathon")
+                .description("Desc")
+                .organizer("Org")
+                .startDate(LocalDateTime.now().plusDays(5))
+                .endDate(LocalDateTime.now().plusDays(7))
+                .location("Virtual")
+                .mode("Online")
+                .registrationDeadline(LocalDateTime.now().plusDays(2))
+                .build();
+
+        mockMvc.perform(post("/api/hackathons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ADMIN")
+    void createHackathon_ShouldReturn400_WhenInvalidPayload() throws Exception {
+        HackathonCreateRequest request = HackathonCreateRequest.builder()
+                .title("") // Invalid
+                .build();
+
+        mockMvc.perform(post("/api/hackathons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

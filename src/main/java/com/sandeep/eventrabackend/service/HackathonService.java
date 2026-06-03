@@ -1,5 +1,6 @@
 package com.sandeep.eventrabackend.service;
 
+import com.sandeep.eventrabackend.dto.request.HackathonCreateRequest;
 import com.sandeep.eventrabackend.dto.response.HackathonResponse;
 import com.sandeep.eventrabackend.exception.HackathonNotFoundException;
 import com.sandeep.eventrabackend.model.Hackathon;
@@ -31,6 +32,25 @@ public class HackathonService {
         return hackathonRepository.findById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new HackathonNotFoundException("Hackathon not found with id: " + id));
+    }
+
+    @Transactional
+    public HackathonResponse createHackathon(HackathonCreateRequest request) {
+        Hackathon hackathon = Hackathon.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .organizer(request.getOrganizer())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .location(request.getLocation())
+                .mode(request.getMode())
+                .prizePool(request.getPrizePool())
+                .registrationDeadline(request.getRegistrationDeadline())
+                .imageUrl(request.getImageUrl())
+                .build();
+
+        Hackathon saved = hackathonRepository.save(hackathon);
+        return mapToResponse(saved);
     }
 
     private HackathonResponse mapToResponse(Hackathon hackathon) {
