@@ -73,6 +73,14 @@ public class HackathonService {
         return mapToResponse(updated);
     }
 
+    @Transactional
+    public void deleteHackathon(Long id) {
+        if (!hackathonRepository.existsById(id)) {
+            throw new HackathonNotFoundException("Hackathon not found with id: " + id);
+        }
+        hackathonRepository.deleteById(id);
+    }
+
     private HackathonResponse mapToResponse(Hackathon hackathon) {
         return HackathonResponse.builder()
                 .id(hackathon.getId())

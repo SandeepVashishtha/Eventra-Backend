@@ -181,4 +181,60 @@ public class HackathonControllerTests {
         mockMvc.perform(get("/api/hackathons"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @WithMockUser(authorities = "ADMIN")
+    void deleteHackathon_ShouldReturn204_WhenAdmin() throws Exception {
+        Hackathon hackathon = Hackathon.builder()
+                .title("Delete Me")
+                .organizer("Org")
+                .build();
+        hackathon = hackathonRepository.save(hackathon);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/hackathons/" + hackathon.getId()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/hackathons/" + hackathon.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(authorities = "SUPER_ADMIN")
+    void deleteHackathon_ShouldReturn204_WhenSuperAdmin() throws Exception {
+        Hackathon hackathon = Hackathon.builder()
+                .title("Delete Me Super")
+                .organizer("Org")
+                .build();
+        hackathon = hackathonRepository.save(hackathon);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/hackathons/" + hackathon.getId()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ORGANIZER")
+    void deleteHackathon_ShouldReturn403_WhenOrganizer() throws Exception {
+        Hackathon hackathon = Hackathon.builder()
+                .title("No Delete Organizer")
+                .organizer("Org")
+                .build();
+        hackathon = hackathonRepository.save(hackathon);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/hackathons/" + hackathon.getId()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteHackathon_ShouldReturn401_WhenUnauthenticated() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/hackathons/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ADMIN")
+    void deleteHackathon_ShouldReturn404_WhenNotFound() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/hackathons/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Hackathon not found with id: 999"));
+    }
 }
