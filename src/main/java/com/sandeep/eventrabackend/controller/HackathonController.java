@@ -170,4 +170,45 @@ public class HackathonController {
             @PathVariable Long id) {
         return ResponseEntity.ok(hackathonService.getHackathonById(id));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPER_ADMIN')")
+    @Operation(
+            summary = "Delete a hackathon",
+            description = "Allows an ADMIN or SUPER_ADMIN to delete a hackathon.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Hackathon deleted successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have the required role",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Hackathon not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<Void> deleteHackathon(
+            @Parameter(description = "ID of the hackathon to delete")
+            @PathVariable Long id) {
+        hackathonService.deleteHackathon(id);
+        return ResponseEntity.noContent().build();
+    }
 }
