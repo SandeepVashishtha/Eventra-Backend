@@ -1,6 +1,7 @@
 package com.sandeep.eventrabackend.controller;
 
 import com.sandeep.eventrabackend.dto.request.HackathonCreateRequest;
+import com.sandeep.eventrabackend.dto.request.HackathonUpdateRequest;
 import com.sandeep.eventrabackend.dto.response.ErrorResponse;
 import com.sandeep.eventrabackend.dto.response.HackathonResponse;
 import com.sandeep.eventrabackend.service.HackathonService;
@@ -72,6 +73,57 @@ public class HackathonController {
     public ResponseEntity<HackathonResponse> createHackathon(
             @Valid @RequestBody HackathonCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(hackathonService.createHackathon(request));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN', 'SUPER_ADMIN')")
+    @Operation(
+            summary = "Update an existing hackathon",
+            description = "Allows an ORGANIZER, ADMIN, or SUPER_ADMIN to update hackathon details.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Hackathon updated successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = HackathonResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid payload (validation failed)",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have the required role",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Hackathon not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<HackathonResponse> updateHackathon(
+            @Parameter(description = "ID of the hackathon to update")
+            @PathVariable Long id,
+            @Valid @RequestBody HackathonUpdateRequest request) {
+        return ResponseEntity.ok(hackathonService.updateHackathon(id, request));
     }
 
     @GetMapping

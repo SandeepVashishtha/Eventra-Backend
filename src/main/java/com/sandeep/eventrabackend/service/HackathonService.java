@@ -53,6 +53,26 @@ public class HackathonService {
         return mapToResponse(saved);
     }
 
+    @Transactional
+    public HackathonResponse updateHackathon(Long id, com.sandeep.eventrabackend.dto.request.HackathonUpdateRequest request) {
+        Hackathon hackathon = hackathonRepository.findById(id)
+                .orElseThrow(() -> new HackathonNotFoundException("Hackathon not found with id: " + id));
+
+        hackathon.setTitle(request.getTitle());
+        hackathon.setDescription(request.getDescription());
+        hackathon.setOrganizer(request.getOrganizer());
+        hackathon.setStartDate(request.getStartDate());
+        hackathon.setEndDate(request.getEndDate());
+        hackathon.setLocation(request.getLocation());
+        hackathon.setMode(request.getMode());
+        hackathon.setPrizePool(request.getPrizePool());
+        hackathon.setRegistrationDeadline(request.getRegistrationDeadline());
+        hackathon.setImageUrl(request.getImageUrl());
+
+        Hackathon updated = hackathonRepository.save(hackathon);
+        return mapToResponse(updated);
+    }
+
     private HackathonResponse mapToResponse(Hackathon hackathon) {
         return HackathonResponse.builder()
                 .id(hackathon.getId())
