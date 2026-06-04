@@ -3,6 +3,7 @@ package com.sandeep.eventrabackend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sandeep.eventrabackend.dto.request.HackathonUpdateRequest;
 import com.sandeep.eventrabackend.model.Hackathon;
+import com.sandeep.eventrabackend.repository.HackathonRegistrationRepository;
 import com.sandeep.eventrabackend.repository.HackathonRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,12 +34,16 @@ public class HackathonUpdateTests {
     private HackathonRepository hackathonRepository;
 
     @Autowired
+    private HackathonRegistrationRepository hackathonRegistrationRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     private Hackathon existingHackathon;
 
     @BeforeEach
     void setUp() {
+        hackathonRegistrationRepository.deleteAll();
         hackathonRepository.deleteAll();
 
         Hackathon hackathon = Hackathon.builder()

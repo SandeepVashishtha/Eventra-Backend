@@ -2,6 +2,7 @@ package com.sandeep.eventrabackend.controller;
 
 import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
+import com.sandeep.eventrabackend.repository.HackathonRegistrationRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,10 +31,14 @@ public class UserProfileTests {
     private UserRepository userRepository;
 
     @Autowired
+    private HackathonRegistrationRepository hackathonRegistrationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        hackathonRegistrationRepository.deleteAll();
         userRepository.deleteAll();
 
         User u = User.builder()

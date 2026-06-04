@@ -3,6 +3,7 @@ package com.sandeep.eventrabackend.controller;
 import com.sandeep.eventrabackend.model.Event;
 import com.sandeep.eventrabackend.repository.EventRegistrationRepository;
 import com.sandeep.eventrabackend.repository.EventRepository;
+import com.sandeep.eventrabackend.repository.HackathonRegistrationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,11 +33,15 @@ public class GetEventByIdTests {
     @Autowired
     private EventRegistrationRepository eventRegistrationRepository;
 
+    @Autowired
+    private HackathonRegistrationRepository hackathonRegistrationRepository;
+
     private Long publicEventId;
     private Long privateEventId;
 
     @BeforeEach
     void setUp() {
+        hackathonRegistrationRepository.deleteAll();
         eventRegistrationRepository.deleteAll();
         eventRepository.deleteAll();
 

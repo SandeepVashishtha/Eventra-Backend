@@ -7,6 +7,7 @@ import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.EventRegistrationRepository;
 import com.sandeep.eventrabackend.repository.EventRepository;
+import com.sandeep.eventrabackend.repository.HackathonRegistrationRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +42,9 @@ public class EventUpdateTests {
     private EventRegistrationRepository eventRegistrationRepository;
 
     @Autowired
+    private HackathonRegistrationRepository hackathonRegistrationRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -53,6 +57,7 @@ public class EventUpdateTests {
 
     @BeforeEach
     void setUp() {
+        hackathonRegistrationRepository.deleteAll();
         eventRegistrationRepository.deleteAll();
         eventRepository.deleteAll();
         userRepository.deleteAll();
