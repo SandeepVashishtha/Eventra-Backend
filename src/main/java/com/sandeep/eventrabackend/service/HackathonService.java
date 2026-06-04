@@ -1,13 +1,22 @@
 package com.sandeep.eventrabackend.service;
 
 import com.sandeep.eventrabackend.dto.request.HackathonCreateRequest;
+import com.sandeep.eventrabackend.dto.response.HackathonRegistrationResponse;
 import com.sandeep.eventrabackend.dto.response.HackathonResponse;
 import com.sandeep.eventrabackend.exception.HackathonNotFoundException;
+import com.sandeep.eventrabackend.exception.RegistrationClosedException;
+import com.sandeep.eventrabackend.exception.RegistrationConflictException;
 import com.sandeep.eventrabackend.model.Hackathon;
+import com.sandeep.eventrabackend.model.HackathonRegistration;
+import com.sandeep.eventrabackend.model.User;
+import com.sandeep.eventrabackend.repository.HackathonRegistrationRepository;
 import com.sandeep.eventrabackend.repository.HackathonRepository;
+import com.sandeep.eventrabackend.repository.UserRepository;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,9 +24,15 @@ import java.util.stream.Collectors;
 public class HackathonService {
 
     private final HackathonRepository hackathonRepository;
+    private final HackathonRegistrationRepository hackathonRegistrationRepository;
+    private final UserRepository userRepository;
 
-    public HackathonService(HackathonRepository hackathonRepository) {
+    public HackathonService(HackathonRepository hackathonRepository,
+                            HackathonRegistrationRepository hackathonRegistrationRepository,
+                            UserRepository userRepository) {
         this.hackathonRepository = hackathonRepository;
+        this.hackathonRegistrationRepository = hackathonRegistrationRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -74,10 +89,47 @@ public class HackathonService {
     }
 
     @Transactional
+    public HackathonRegistrationResponse registerUserForHackathon(Long id, String userEmail) {
+        Hackathon hackathon = hackathonRepository.findById(id)
+                .orElseThrow(() -> new HackathonNotFoundException("Hackathon not found with id: " + id));
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        // Duplicate registration check
+        if (hackathonRegistrationRepository.existsByHackathon_IdAndUser_Email(id, userEmail)) {
+            throw new RegistrationConflictException("You are already registered for this hackathon.");
+        }
+
+        // Deadline check
+        if (hackathon.getRegistrationDeadline() != null && LocalDateTime.now().isAfter(hackathon.getRegistrationDeadline())) {
+            throw new RegistrationClosedException("Registration deadline has passed for this hackathon.");
+        }
+
+        HackathonRegistration registration = HackathonRegistration.builder()
+                .hackathon(hackathon)
+                .user(user)
+                .status("CONFIRMED")
+                .build();
+
+        registration = hackathonRegistrationRepository.save(registration);
+
+        return HackathonRegistrationResponse.builder()
+                .registrationId(registration.getId())
+                .hackathonId(hackathon.getId())
+                .hackathonTitle(hackathon.getTitle())
+                .userEmail(user.getEmail())
+                .registeredAt(registration.getRegisteredAt())
+                .status(registration.getStatus())
+                .build();
+    }
+
+    @Transactional
     public void deleteHackathon(Long id) {
         if (!hackathonRepository.existsById(id)) {
             throw new HackathonNotFoundException("Hackathon not found with id: " + id);
         }
+        hackathonRegistrationRepository.deleteByHackathonId(id);
         hackathonRepository.deleteById(id);
     }
 
