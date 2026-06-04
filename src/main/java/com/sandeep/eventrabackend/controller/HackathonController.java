@@ -3,6 +3,7 @@ package com.sandeep.eventrabackend.controller;
 import com.sandeep.eventrabackend.dto.request.HackathonCreateRequest;
 import com.sandeep.eventrabackend.dto.request.HackathonUpdateRequest;
 import com.sandeep.eventrabackend.dto.response.ErrorResponse;
+import com.sandeep.eventrabackend.dto.response.HackathonRegistrationResponse;
 import com.sandeep.eventrabackend.dto.response.HackathonResponse;
 import com.sandeep.eventrabackend.service.HackathonService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +33,57 @@ public class HackathonController {
 
     public HackathonController(HackathonService hackathonService) {
         this.hackathonService = hackathonService;
+    }
+
+    @PostMapping("/{id}/register")
+    @Operation(
+            summary = "Register for a hackathon",
+            description = "Allows an authenticated user to register for a specific hackathon.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Registered successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = HackathonRegistrationResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Registration closed / invalid request",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - JWT token missing or invalid",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Hackathon not found",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Already registered",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<HackathonRegistrationResponse> registerForHackathon(
+            @Parameter(description = "ID of the hackathon to register for")
+            @PathVariable Long id,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        return ResponseEntity.status(HttpStatus.CREATED).body(hackathonService.registerUserForHackathon(id, userEmail));
     }
 
     @PostMapping
