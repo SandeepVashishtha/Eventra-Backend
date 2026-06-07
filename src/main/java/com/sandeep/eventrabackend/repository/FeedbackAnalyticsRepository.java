@@ -38,4 +38,6 @@ public interface FeedbackAnalyticsRepository extends JpaRepository<Feedback, Lon
         ORDER BY f.rating
         """)
     List<Object[]> findRatingDistributionByEvent(@Param("eventId") Long eventId);
+
+    boolean existsByEvent_IdAndUser_Email(Long eventId, String email);
 }

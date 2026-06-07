@@ -92,6 +92,20 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(FeedbackAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleFeedbackAlreadyExists(
+            FeedbackAlreadyExistsException ex,
+            HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserNotRegisteredException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotRegistered(
+            UserNotRegisteredException ex,
+            HttpServletRequest request) {
+        return buildError(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage(), request);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(
             AccessDeniedException ex,
