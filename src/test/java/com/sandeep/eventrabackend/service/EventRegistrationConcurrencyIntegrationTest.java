@@ -7,6 +7,7 @@ import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.EventRegistrationRepository;
 import com.sandeep.eventrabackend.repository.EventRepository;
+import com.sandeep.eventrabackend.repository.NotificationRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +50,9 @@ class EventRegistrationConcurrencyIntegrationTest {
     private EventRegistrationRepository eventRegistrationRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -56,6 +60,7 @@ class EventRegistrationConcurrencyIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         eventRegistrationRepository.deleteAll();
         eventRepository.deleteAll();
         userRepository.deleteAll();

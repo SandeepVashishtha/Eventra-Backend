@@ -5,6 +5,7 @@ import com.sandeep.eventrabackend.dto.request.UserProfileUpdateRequest;
 import com.sandeep.eventrabackend.model.Role;
 import com.sandeep.eventrabackend.model.User;
 import com.sandeep.eventrabackend.repository.HackathonRegistrationRepository;
+import com.sandeep.eventrabackend.repository.NotificationRepository;
 import com.sandeep.eventrabackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,9 @@ public class UserProfileUpdateTests {
     private UserRepository userRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private HackathonRegistrationRepository hackathonRegistrationRepository;
 
     @Autowired
@@ -45,6 +49,7 @@ public class UserProfileUpdateTests {
 
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         hackathonRegistrationRepository.deleteAll();
         userRepository.deleteAll();
 

@@ -46,6 +46,9 @@ public class FeedbackControllerTests {
     private FeedbackAnalyticsRepository feedbackRepository;
 
     @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -56,6 +59,7 @@ public class FeedbackControllerTests {
 
     @BeforeEach
     void setUp() {
+        notificationRepository.deleteAll();
         feedbackRepository.deleteAll();
         eventRegistrationRepository.deleteAll();
         eventRepository.deleteAll();
