@@ -1,9 +1,11 @@
 package com.sandeep.eventrabackend.service;
 
 import com.sandeep.eventrabackend.dto.response.NotificationResponse;
+import com.sandeep.eventrabackend.exception.NotificationNotFoundException;
 import com.sandeep.eventrabackend.model.Notification;
 import com.sandeep.eventrabackend.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +24,16 @@ public class NotificationService {
         return notifications.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public NotificationResponse markAsRead(Long id, String email) {
+        Notification notification = notificationRepository.findByIdAndUserEmail(id, email)
+                .orElseThrow(() -> new NotificationNotFoundException("Notification not found with id: " + id));
+
+        notification.setRead(true);
+        Notification updatedNotification = notificationRepository.save(notification);
+        return mapToResponse(updatedNotification);
     }
 
     private NotificationResponse mapToResponse(Notification notification) {
