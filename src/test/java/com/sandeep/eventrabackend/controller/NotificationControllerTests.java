@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -139,9 +140,9 @@ public class NotificationControllerTests {
                 .build();
         notificationRepository.save(oldNotification);
 
-        // Manually set creation time if possible, or just rely on sequence of saves
-        // Since we use @CreationTimestamp, the second save should have a later timestamp.
-        
+        // Add small delay to ensure distinct @CreationTimestamp values
+        Thread.sleep(100);
+
         Notification newNotification = Notification.builder()
                 .user(testUser1)
                 .title("New")
@@ -156,5 +157,70 @@ public class NotificationControllerTests {
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].title").value("New"))
                 .andExpect(jsonPath("$[1].title").value("Old"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/notifications/{id}/read marks own notification as read")
+    void testMarkAsReadSuccess() throws Exception {
+        Notification n1 = Notification.builder()
+                .user(testUser1)
+                .title("Unread")
+                .message("Msg")
+                .isRead(false)
+                .build();
+        n1 = notificationRepository.save(n1);
+
+        mockMvc.perform(put("/api/notifications/" + n1.getId() + "/read")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.read").value(true));
+    }
+
+    @Test
+    @DisplayName("PUT /api/notifications/{id}/read returns 404 for non-existent notification")
+    void testMarkAsReadNotFound() throws Exception {
+        mockMvc.perform(put("/api/notifications/999/read")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /api/notifications/{id}/read returns 404 for another user's notification")
+    void testMarkAsReadIsolation() throws Exception {
+        Notification n2 = Notification.builder()
+                .user(testUser2)
+                .title("User 2 Notification")
+                .message("Secret")
+                .isRead(false)
+                .build();
+        n2 = notificationRepository.save(n2);
+
+        mockMvc.perform(put("/api/notifications/" + n2.getId() + "/read")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /api/notifications/{id}/read returns 401 for unauthenticated request")
+    void testMarkAsReadUnauthorized() throws Exception {
+        mockMvc.perform(put("/api/notifications/1/read"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("PUT /api/notifications/{id}/read returns 200 for already-read notification")
+    void testMarkAsReadAlreadyRead() throws Exception {
+        Notification n1 = Notification.builder()
+                .user(testUser1)
+                .title("Read")
+                .message("Msg")
+                .isRead(true)
+                .build();
+        n1 = notificationRepository.save(n1);
+
+        mockMvc.perform(put("/api/notifications/" + n1.getId() + "/read")
+                        .with(user("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.read").value(true));
     }
 }
