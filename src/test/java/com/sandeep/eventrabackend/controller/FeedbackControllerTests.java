@@ -52,6 +52,9 @@ public class FeedbackControllerTests {
     private UserRepository userRepository;
 
     @Autowired
+    private HackathonRegistrationRepository hackathonRegistrationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private Long eventId;
@@ -62,6 +65,7 @@ public class FeedbackControllerTests {
         notificationRepository.deleteAll();
         feedbackRepository.deleteAll();
         eventRegistrationRepository.deleteAll();
+        hackathonRegistrationRepository.deleteAll();
         eventRepository.deleteAll();
         userRepository.deleteAll();
 
