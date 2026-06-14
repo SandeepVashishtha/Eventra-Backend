@@ -22,6 +22,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -113,6 +117,17 @@ public class EventService {
                 .orElseThrow(() ->
                         new EventNotFoundException(
                                 "Event not found with id: " + id));
+    }
+
+    /**
+     * Returns a paginated, date-ascending list of public events.
+     * Size is capped at 100 to prevent abuse.
+     */
+    @Transactional(readOnly = true)
+    public Page<EventResponse> getPublicEvents(int page, int size) {
+        int clampedSize = Math.min(size, 100);
+        Pageable pageable = PageRequest.of(page, clampedSize, Sort.by(Sort.Direction.ASC, "eventDate"));
+        return eventRepository.findByIsPublicTrue(pageable).map(this::toEventResponse);
     }
 
     /**

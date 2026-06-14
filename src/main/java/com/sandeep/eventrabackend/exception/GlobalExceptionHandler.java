@@ -14,6 +14,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -111,6 +113,14 @@ public class GlobalExceptionHandler {
             AccessDeniedException ex,
             HttpServletRequest request) {
         return buildError(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource", request);
+    }
+
+    @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNoRouteFound(
+            Exception ex,
+            HttpServletRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, "Not Found",
+                "The requested resource was not found", request);
     }
 
     @ExceptionHandler(Exception.class)
