@@ -21,7 +21,7 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("Eventra API")
                         .description("""
-                                **Eventra** — Event Management Platform REST API.
+                                **Eventra** - Event Management Platform REST API.
 
                                 ### Authentication
                                 - Use `POST /api/auth/signup` to create an account.
@@ -35,8 +35,8 @@ public class SwaggerConfig {
                                 """)
                         .version("v1.0.0")
                         .contact(new Contact()
-                                .name("Sandeep")
-                                .email("sandeep@eventra.com"))
+                                .name("Sandeep Vashishtha")
+                                .email("sandeepvashishtha@outlook.in"))
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
