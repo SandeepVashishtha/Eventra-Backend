@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,29 @@ public class EventController {
     public EventController(EventService eventService, EventStreamService eventStreamService) {
         this.eventService = eventService;
         this.eventStreamService = eventStreamService;
+    }
+
+    // ── GET /api/events — paginated public event feed ────────────────────────
+
+    @GetMapping
+    @Operation(
+            summary = "Get paginated public events",
+            description = "Returns a page of public events ordered by event date ascending. " +
+                          "Size is capped at 100 per request."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Events fetched successfully"
+            )
+    })
+    public ResponseEntity<Page<EventResponse>> getPublicEvents(
+            @Parameter(description = "Page number (0-indexed)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of events per page (max 100)", example = "24")
+            @RequestParam(defaultValue = "24") int size) {
+
+        return ResponseEntity.ok(eventService.getPublicEvents(page, size));
     }
 
     // ── Issue #2102 — POST /api/events/create ────────────────────────────────
