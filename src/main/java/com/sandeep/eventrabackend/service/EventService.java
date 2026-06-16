@@ -116,6 +116,18 @@ public class EventService {
     }
 
     /**
+     * Retrieves all events.
+     *
+     * @return list of all events
+     */
+    @Transactional(readOnly = true)
+    public List<EventResponse> getAllEvents() {
+        return eventRepository.findAll().stream()
+                .map(this::toEventResponse)
+                .toList();
+    }
+
+    /**
      * Retrieves events registered by the authenticated user.
      *
      * @param userEmail authenticated user's email

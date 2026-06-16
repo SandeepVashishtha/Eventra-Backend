@@ -26,7 +26,10 @@ public class SwaggerConfig {
                                 ### Authentication
                                 - Use `POST /api/auth/signup` to create an account.
                                 - Use `POST /api/auth/login` to obtain a JWT token.
-                                - Click **Authorize** and paste the token as `Bearer <token>` to test protected endpoints.
+                                - Click **Authorize** and paste the token to test protected endpoints.
+
+                                ### Events
+                                - Use `GET /api/events` to retrieve all available events.
 
                                 ### Rate limiting
                                 Public auth/contact endpoints are rate limited by client IP.

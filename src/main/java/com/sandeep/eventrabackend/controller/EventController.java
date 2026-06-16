@@ -12,12 +12,15 @@ import com.sandeep.eventrabackend.service.EventStreamService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.List;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -162,6 +165,24 @@ public class EventController {
     })
     public SseEmitter streamEvents() {
         return eventStreamService.createEmitter();
+    }
+
+    @GetMapping
+    @Operation(
+            summary = "Get all events",
+            description = "Returns a list of all available events."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Events fetched successfully",
+                    content = @Content(
+                            array = @ArraySchema(schema = @Schema(implementation = EventResponse.class))
+                    )
+            )
+    })
+    public ResponseEntity<List<EventResponse>> getAllEvents() {
+        return ResponseEntity.ok(eventService.getAllEvents());
     }
 
     // ── Issue #2101 — GET /api/events/{id} ──────────────────────────────────
