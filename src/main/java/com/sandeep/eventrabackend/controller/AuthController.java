@@ -2,6 +2,7 @@ package com.sandeep.eventrabackend.controller;
 
 import com.sandeep.eventrabackend.dto.request.LoginRequest;
 import com.sandeep.eventrabackend.dto.request.SignupRequest;
+import com.sandeep.eventrabackend.dto.request.GoogleAuthRequest;
 import com.sandeep.eventrabackend.dto.response.AuthResponse;
 import com.sandeep.eventrabackend.dto.response.ErrorResponse;
 import com.sandeep.eventrabackend.service.AuthService;
@@ -16,7 +17,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.sandeep.eventrabackend.dto.request.GoogleAuthRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -94,6 +97,22 @@ public class AuthController {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
+
+        @PostMapping("/refresh")
+        @GetMapping("/refresh")
+        @SecurityRequirements
+        @Operation(summary = "Refresh access token",
+                        description = "Currently returns 401 — refresh-token flow not yet implemented.")
+        public ResponseEntity<ErrorResponse> refresh(HttpServletRequest request) {
+                ErrorResponse error = ErrorResponse.builder()
+                                .status(HttpStatus.UNAUTHORIZED.value())
+                                .error("Unauthorized")
+                                .message("No valid session. Please log in.")
+                                .path(request.getRequestURI())
+                                .timestamp(LocalDateTime.now())
+                                .build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
 
 
 @PostMapping("/google")
