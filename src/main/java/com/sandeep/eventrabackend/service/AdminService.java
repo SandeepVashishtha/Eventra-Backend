@@ -3,6 +3,8 @@ package com.sandeep.eventrabackend.service;
 import com.sandeep.eventrabackend.dto.AdminDashboardStatsDTO;
 import com.sandeep.eventrabackend.dto.RegistrationTrendDTO;
 import com.sandeep.eventrabackend.dto.response.*;
+import com.sandeep.eventrabackend.exception.EventNotFoundException;
+import com.sandeep.eventrabackend.exception.HackathonNotFoundException;
 import com.sandeep.eventrabackend.model.Feedback;
 import com.sandeep.eventrabackend.model.Hackathon;
 import com.sandeep.eventrabackend.model.Role;
@@ -36,6 +38,8 @@ public class AdminService {
     private final FeedbackAnalyticsRepository feedbackRepository;
     private final EventAnalyticsRepository    eventAnalyticsRepo;
     private final RegistrationAnalyticsRepository regRepo;
+    private final EventRegistrationRepository eventRegistrationRepository;
+    private final HackathonRegistrationRepository hackathonRegistrationRepository;
 
     // ══════════════════════════════════════════════════════════════════════
     // 1. USER MANAGEMENT
@@ -118,12 +122,17 @@ public class AdminService {
 
     /**
      * Force-deletes an event (admin override, bypasses organizer ownership).
+     *
+     * <p>Registrations are removed first so that the non-cascading
+     * {@code event_registrations.event_id} foreign key is not violated
+     * (issue #71). Mirrors {@link EventService#deleteEvent}.
      */
     @Transactional
     public void deleteEvent(Long id) {
         if (!eventRepository.existsById(id)) {
-            throw new EntityNotFoundException("Event not found with id: " + id);
+            throw new EventNotFoundException("Event not found with id: " + id);
         }
+        eventRegistrationRepository.deleteByEventId(id);
         eventRepository.deleteById(id);
     }
 
@@ -141,12 +150,17 @@ public class AdminService {
 
     /**
      * Deletes a hackathon by ID.
+     *
+     * <p>Registrations are removed first so that the non-cascading
+     * {@code hackathon_registrations.hackathon_id} foreign key is not violated
+     * (issue #71). Mirrors {@link HackathonService#deleteHackathon}.
      */
     @Transactional
     public void deleteHackathon(Long id) {
         if (!hackathonRepository.existsById(id)) {
-            throw new EntityNotFoundException("Hackathon not found with id: " + id);
+            throw new HackathonNotFoundException("Hackathon not found with id: " + id);
         }
+        hackathonRegistrationRepository.deleteByHackathonId(id);
         hackathonRepository.deleteById(id);
     }
 
