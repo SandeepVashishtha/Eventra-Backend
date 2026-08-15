@@ -4,6 +4,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @ConfigurationProperties(prefix = "app.rate-limit")
@@ -15,12 +18,29 @@ public class RateLimitProperties {
     private EndpointLimit forgotPassword = new EndpointLimit(3, Duration.ofMinutes(15));
     private EndpointLimit contact = new EndpointLimit(5, Duration.ofMinutes(10));
 
+    /**
+     * IP addresses (exact or CIDR) of reverse proxies whose forwarded headers
+     * ({@code X-Forwarded-For} / {@code X-Real-IP}) may be trusted when resolving
+     * the client IP. Requests whose direct remote address is not in this list
+     * ignore those headers entirely, preventing spoofing. Defaults to loopback
+     * addresses so local development keeps working.
+     */
+    private List<String> trustedProxies = new ArrayList<>(Arrays.asList("127.0.0.1", "::1", "0:0:0:0:0:0:0:1"));
+
     public boolean isEnabled() {
         return enabled;
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public List<String> getTrustedProxies() {
+        return trustedProxies;
+    }
+
+    public void setTrustedProxies(List<String> trustedProxies) {
+        this.trustedProxies = trustedProxies;
     }
 
     public EndpointLimit getLogin() {
