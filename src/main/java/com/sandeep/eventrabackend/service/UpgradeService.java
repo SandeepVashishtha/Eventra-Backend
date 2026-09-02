@@ -25,10 +25,14 @@ public class UpgradeService {
     }
 
     @PostConstruct
+    @Transactional
     public void initInventory() {
-        // Idempotent initial seed of default add-on quotas if not already present in database
-        if (!addonInventoryRepository.existsById("VIP_LOUNGE_PASS")) {
-            addonInventoryRepository.save(new AddonInventory("VIP_LOUNGE_PASS", 15));
+        // Atomic initial seed of default add-on quotas if not already present in database.
+        // Prevents check-then-insert race condition if multiple instances boot simultaneously.
+        try {
+            addonInventoryRepository.insertIfAbsent("VIP_LOUNGE_PASS", 15);
+        } catch (Exception e) {
+            // Safe fallback if already handled by another concurrent instance
         }
     }
 

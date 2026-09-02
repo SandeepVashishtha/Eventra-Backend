@@ -23,4 +23,17 @@ public interface AddonInventoryRepository extends JpaRepository<AddonInventory, 
     @Modifying
     @Query("UPDATE AddonInventory a SET a.remaining = a.remaining - 1 WHERE a.id = :addonId AND a.remaining > 0")
     int decrementRemainingIfPositive(@Param("addonId") String addonId);
+
+    /**
+     * Atomically inserts an add-on inventory record if it does not already exist.
+     * Uses native SQL with conflict handling to prevent check-then-insert race conditions
+     * across horizontally-scaled instances starting concurrently.
+     *
+     * @param addonId The unique identifier of the add-on.
+     * @param remaining The initial quota count.
+     * @return The number of rows inserted (1 if inserted, 0 if already existed).
+     */
+    @Modifying
+    @Query(value = "INSERT INTO addon_inventory (id, remaining) VALUES (:addonId, :remaining) ON CONFLICT (id) DO NOTHING", nativeQuery = true)
+    int insertIfAbsent(@Param("addonId") String addonId, @Param("remaining") int remaining);
 }

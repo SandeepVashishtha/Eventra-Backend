@@ -25,23 +25,11 @@ public class UpgradeServiceTest {
     private UpgradeService upgradeService;
 
     @Test
-    @DisplayName("Should initialize VIP_LOUNGE_PASS inventory on startup if not already existing")
-    void testInitInventoryWhenNotExists() {
-        when(addonInventoryRepository.existsById("VIP_LOUNGE_PASS")).thenReturn(false);
-
+    @DisplayName("Should execute atomic insertIfAbsent for VIP_LOUNGE_PASS on startup")
+    void testInitInventoryCallsInsertIfAbsent() {
         upgradeService.initInventory();
 
-        verify(addonInventoryRepository, times(1)).save(any(AddonInventory.class));
-    }
-
-    @Test
-    @DisplayName("Should skip inventory initialization on startup if record already exists")
-    void testInitInventoryWhenAlreadyExists() {
-        when(addonInventoryRepository.existsById("VIP_LOUNGE_PASS")).thenReturn(true);
-
-        upgradeService.initInventory();
-
-        verify(addonInventoryRepository, never()).save(any(AddonInventory.class));
+        verify(addonInventoryRepository, times(1)).insertIfAbsent("VIP_LOUNGE_PASS", 15);
     }
 
     @Test
