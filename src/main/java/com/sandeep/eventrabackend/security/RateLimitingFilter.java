@@ -115,6 +115,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
+        if (!isTrustedProxy(remoteAddr)) {
+            return remoteAddr;
+        }
+
         String forwardedFor = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwardedFor)) {
             String firstForwardedIp = forwardedFor.split(",")[0].trim();
@@ -128,7 +133,38 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return realIp.trim();
         }
 
-        return request.getRemoteAddr();
+        return remoteAddr;
+    }
+
+    /**
+     * Returns true when the direct remote address matches one of the configured
+     * trusted-proxy entries (exact IP or CIDR). Only then are forwarded headers
+     * honoured, which prevents clients from spoofing {@code X-Forwarded-For} to
+     * bypass the rate limiter.
+     */
+    private boolean isTrustedProxy(String remoteAddr) {
+        if (!StringUtils.hasText(remoteAddr)) {
+            return false;
+        }
+        List<String> trusted = properties.getTrustedProxies();
+        if (trusted == null || trusted.isEmpty()) {
+            return false;
+        }
+        for (String entry : trusted) {
+            if (!StringUtils.hasText(entry)) {
+                continue;
+            }
+            try {
+                if (new org.springframework.security.web.util.matcher.IpAddressMatcher(entry).matches(remoteAddr)) {
+                    return true;
+                }
+            } catch (IllegalArgumentException ignored) {
+                if (entry.trim().equalsIgnoreCase(remoteAddr)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private record EndpointRule(String name, String method, String path) {

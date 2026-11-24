@@ -49,4 +49,32 @@ class RateLimitingFilterTests {
                 .andExpect(jsonPath("$.error", is("Too Many Requests")))
                 .andExpect(jsonPath("$.path", is("/api/auth/login")));
     }
+
+    @Test
+    void ignoresSpoofedXForwardedForFromUntrustedRemote() throws Exception {
+        // A client that is NOT a configured trusted proxy sets a different
+        // spoofed X-Forwarded-For on each request. Because the filter no longer
+        // trusts forwarded headers from untrusted remotes, both requests share
+        // the same rate-limit key (the direct remote address) and the second
+        // one is rejected — the spoofing bypass is closed.
+        org.springframework.test.web.servlet.request.RequestPostProcessor fromUntrusted =
+                request -> {
+                    request.setRemoteAddr("203.0.113.99");
+                    return request;
+                };
+
+        mockMvc.perform(post("/api/auth/login")
+                        .with(fromUntrusted)
+                        .header("X-Forwarded-For", "1.1.1.1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .with(fromUntrusted)
+                        .header("X-Forwarded-For", "2.2.2.2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isTooManyRequests());
+    }
 }
